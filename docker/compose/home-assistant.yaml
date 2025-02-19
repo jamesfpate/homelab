@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    privileged: true
+    networks:
+      - vlan-iot
+        - ipv4_address: 192.168.40.50
+    ports:
+      - "8123:8123"
+    volumes:
+      - /mnt/user/appdata/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/ttyACM0:/dev/ACM0 # Zooz 800 Z-Wave
+    environment:
+      - TZ=America/New_York
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hass.rule=Host(`ha.jamespate.net`)"
+      - "traefik.http.routers.hass.tls=true"
+    restart: unless-stopped
+
+networks:
+  vlan-iot:
+    driver: macvlan
+    driver_opts:
+      parent: br0.40
+    ipam:
+      config:
+        - subnet: 191.168.40.0/24
+          gateway: 191.168.40.1

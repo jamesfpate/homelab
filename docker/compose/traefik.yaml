@@ -1,0 +1,45 @@
+version: '3'
+
+networks:
+  public_net:
+    driver: macvlan
+    driver_opts:
+      parent: eth0.20
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+  private_net:
+    driver: macvlan
+    driver_opts:
+      parent: eth0.10
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - public_net
+      - private_net
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../config/traefik:/etc/traefik
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CF_API_KEY}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    restart: unless-stopped
