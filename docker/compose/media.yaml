@@ -1,0 +1,133 @@
+version: '3'
+services:
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    restart: unless-stopped
+    privileged: true
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.10
+    ports:
+      - "1900:1900/udp"    # DLNA discovery
+      - "3005:3005"        # Plex Companion (Mobile apps)
+      - "5353:5353/udp"    # Bonjour/Avahi discovery
+      - "8324:8324"        # Roku via UPNP
+      - "32400:32400"      # Primary communication/Web interface
+      - "32410:32410/udp"  # GDM network discovery
+      - "32412:32412/udp"  # GDM network discovery
+      - "32413:32413/udp"  # GDM network discovery
+      - "32414:32414/udp"  # GDM network discovery
+      - "32469:32469"      # DLNA media transfer
+    devices:
+      - /dev/dri:/dev/dri  # For Intel QuickSync/Graphics
+    volumes:
+      - /mnt/user/appdata/plex:/config
+      - /mnt/user/plexmedia:/media
+    environment:
+      - TZ=America/New_York
+      - PLEX_CLAIM=claim-XXXX #https://account.plex.tv/en/claim only need 1st setup
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-private"
+      - "traefik.http.routers.plex.rule=Host(`plex.jamespate.net`)"
+      - "traefik.http.routers.plex.tls=true"
+
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.61
+    ports:
+      - "8989:8989"  # Sonarr web interface
+    volumes:
+      - /mnt/user/appdata/sonarr:/config
+      - /mnt/user/plexmedia/tv:/tv
+      - /mnt/user/plexdownloads:/downloads
+    environment:
+      - TZ=America/New_York
+      - PUID=1003
+      - PGID=100
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.sonarr.rule=Host(`tv.jamespate.net`)"
+      - "traefik.http.routers.sonarr.tls=true"
+
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.62
+    ports:
+      - "7878:7878"  # Radarr web interface
+    volumes:
+      - /mnt/user/appdata/radarr:/config
+      - /mnt/user/plexmedia/movies:/movies
+      - /mnt/user/plexdownloads:/downloads
+    environment:
+      - TZ=America/New_York
+      - PUID=1003
+      - PGID=100
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.radarr.rule=Host(`movies.jamespate.net`)"
+      - "traefik.http.routers.radarr.tls=true"
+
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.63  # Picked .53, adjust as needed
+    ports:
+      - "9696:9696"  # Prowlarr web interface
+    volumes:
+      - /mnt/user/appdata/prowlarr:/config
+    environment:
+      - TZ=America/New_York
+      - PUID=1003
+      - PGID=100
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"  # Use private network for web access
+      - "traefik.http.routers.prowlarr.rule=Host(`indexer.jamespate.net`)"
+      - "traefik.http.routers.prowlarr.tls=true"
+
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.60
+    ports:
+      - "8080:8080" #webui
+      - "6881:6881"  # Incoming connections
+      - "6881:6881/udp"  # DHT
+    volumes:
+      - /mnt/user/appdata/qbittorrent:/config
+      - /mnt/user/plexdownloads:/downloads
+    environment:
+      - TZ=America/New_York 
+      - PUID=1003
+      - PGID=100
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"  # Tell Traefik which network to use
+      - "traefik.http.routers.qbit.rule=Host(`downloads.jamespate.net`)"
+      - "traefik.http.routers.qbit.tls=true"
+      - "traefik.http.services.qbit.loadbalancer.server.port=8080"  # Specify the web UI port
+
+networks:
+  vlan-private:
+    external: true
+  vlan-downloads:
+    external: true
+#done

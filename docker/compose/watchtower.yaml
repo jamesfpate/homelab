@@ -1,4 +1,3 @@
-# docker/compose/management.yaml
 version: '3'
 
 networks:
