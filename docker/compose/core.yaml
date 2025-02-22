@@ -53,7 +53,7 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       # Security (combine both)
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_AUTH}"
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth" #add back ,auth
     restart: unless-stopped
 
