@@ -10,11 +10,8 @@ services:
       vlan-private:
         ipv4_address: 192.168.1.2
       vlan-iot:
-        ipv4_address: 192.168.40.2
       vlan-downloads:
-        ipv4_address: 192.168.60.2
       vlan-cameras:
-        ipv4_address: 192.168.70.2
     ports:
       - "192.168.1.2:80:80"
       - "192.168.1.2:443:443"
@@ -41,7 +38,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.watch=true"
-      # Entrypoints
+      # Entrypoints - this is ip specific so it doesnt conflict with unraid
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
       # Optional: HTTP to HTTPS redirect
