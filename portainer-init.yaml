@@ -4,7 +4,9 @@ services:
   portainer-init:
     image: portainer/portainer-ce:latest
     ports:
-      - "9001:9000"
+      - "9001:9000"     # Main UI
+      - "8001:8000"     # Edge agent
+      - "9444:9443"     # SSL UI
     container_name: portainer-init
     restart: unless-stopped
     volumes:

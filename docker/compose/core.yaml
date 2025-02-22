@@ -57,11 +57,11 @@ services:
       - "--serversTransport.insecureSkipVerify=true"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]    # Simpler built-in check
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 30s    # Give it time to start up
   
   cloudflared:
     image: cloudflare/cloudflared:latest
