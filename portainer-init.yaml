@@ -8,6 +8,13 @@ services:
     restart: unless-stopped
     ports:
       - "9001:9000"
+    networks:
+      - network-init
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/portainer:/data
+
+networks:
+  network-init:
+    name: network-init
+    driver: bridge  # Use bridge for temporary network

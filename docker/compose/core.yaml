@@ -212,6 +212,7 @@ services:
 
 networks:
   vlan-private:
+    name: vlan-private
     driver: macvlan
     driver_opts:
       parent: br0.1
@@ -221,6 +222,7 @@ networks:
           gateway: 192.168.1.1
 
   vlan-public:
+    name: vlan-public
     driver: macvlan
     driver_opts:
       parent: br0.20
@@ -230,6 +232,7 @@ networks:
           gateway: 192.168.20.1
 
   vlan-iot:
+    name: vlan-iot
     driver: macvlan
     driver_opts:
       parent: br0.40
@@ -239,6 +242,7 @@ networks:
           gateway: 192.168.40.1
 
   vlan-downloads:
+    name: vlan-downloads
     driver: macvlan
     driver_opts:
       parent: br0.60
@@ -248,6 +252,7 @@ networks:
           gateway: 192.168.60.1
 
   vlan-cameras:
+    name: vlan-cameras
     driver: macvlan
     driver_opts:
       parent: br0.70
