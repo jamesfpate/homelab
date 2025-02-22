@@ -1,8 +1,13 @@
 version: '3'
 services:
+
   plex:
-    image: plexinc/pms-docker:latest
+    env_file:
+      - /boot/custom/.env
+    image: linuxserver/plex:latest
     container_name: plex
+    depends_on:
+      - traefik
     restart: unless-stopped
     privileged: true
     networks:
@@ -23,86 +28,29 @@ services:
       - /dev/dri:/dev/dri  # For Intel QuickSync/Graphics
     volumes:
       - /mnt/user/appdata/plex:/config
-      - /mnt/user/plexmedia:/media
+      - /mnt/user/plexmedia/movies:/movies
+      - /mnt/user/plexmedia/tv:/tv
     environment:
-      - TZ=America/New_York
-      - PLEX_CLAIM=claim-XXXX #https://account.plex.tv/en/claim only need 1st setup
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - VERSION=docker
+      - PLEX_PREFERENCE_1="FriendlyName=pateplex"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=vlan-private"
-      - "traefik.http.routers.plex.rule=Host(`plex.jamespate.net`)"
+      - "traefik.http.routers.plex.rule=Host(`plex.${DOMAIN}`)"
       - "traefik.http.routers.plex.tls=true"
-
-  sonarr:
-    image: linuxserver/sonarr:latest
-    container_name: sonarr
-    restart: unless-stopped
-    networks:
-      vlan-downloads:
-        ipv4_address: 192.168.60.61
-    ports:
-      - "8989:8989"  # Sonarr web interface
-    volumes:
-      - /mnt/user/appdata/sonarr:/config
-      - /mnt/user/plexmedia/tv:/tv
-      - /mnt/user/plexdownloads:/downloads
-    environment:
-      - TZ=America/New_York
-      - PUID=1003
-      - PGID=100
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=vlan-downloads"
-      - "traefik.http.routers.sonarr.rule=Host(`tv.jamespate.net`)"
-      - "traefik.http.routers.sonarr.tls=true"
-
-  radarr:
-    image: linuxserver/radarr:latest
-    container_name: radarr
-    restart: unless-stopped
-    networks:
-      vlan-downloads:
-        ipv4_address: 192.168.60.62
-    ports:
-      - "7878:7878"  # Radarr web interface
-    volumes:
-      - /mnt/user/appdata/radarr:/config
-      - /mnt/user/plexmedia/movies:/movies
-      - /mnt/user/plexdownloads:/downloads
-    environment:
-      - TZ=America/New_York
-      - PUID=1003
-      - PGID=100
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=vlan-downloads"
-      - "traefik.http.routers.radarr.rule=Host(`movies.jamespate.net`)"
-      - "traefik.http.routers.radarr.tls=true"
-
-  prowlarr:
-    image: linuxserver/prowlarr:latest
-    container_name: prowlarr
-    restart: unless-stopped
-    networks:
-      vlan-downloads:
-        ipv4_address: 192.168.60.63  # Picked .53, adjust as needed
-    ports:
-      - "9696:9696"  # Prowlarr web interface
-    volumes:
-      - /mnt/user/appdata/prowlarr:/config
-    environment:
-      - TZ=America/New_York
-      - PUID=1003
-      - PGID=100
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=vlan-downloads"  # Use private network for web access
-      - "traefik.http.routers.prowlarr.rule=Host(`indexer.jamespate.net`)"
-      - "traefik.http.routers.prowlarr.tls=true"
-
+      - "traefik.http.routers.plex.tls.certresolver=letsencrypt"
+      - "traefik.http.services.plex.loadbalancer.server.port=32400"
+  
   qbittorrent:
+    env_file:
+      - /boot/custom/.env
     image: linuxserver/qbittorrent:latest
     container_name: qbittorrent
+    depends_on:
+      - traefik
     restart: unless-stopped
     networks:
       vlan-downloads:
@@ -115,15 +63,167 @@ services:
       - /mnt/user/appdata/qbittorrent:/config
       - /mnt/user/plexdownloads:/downloads
     environment:
-      - TZ=America/New_York 
-      - PUID=1003
-      - PGID=100
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=vlan-downloads"  # Tell Traefik which network to use
-      - "traefik.http.routers.qbit.rule=Host(`downloads.jamespate.net`)"
+      - "traefik.http.routers.qbit.rule=Host(`downloads.${DOMAIN}`)"
       - "traefik.http.routers.qbit.tls=true"
+      - "traefik.http.routers.qbit.tls.certresolver=letsencrypt"
       - "traefik.http.services.qbit.loadbalancer.server.port=8080"  # Specify the web UI port
+
+  prowlarr: #indexer
+    env_file:
+      - /boot/custom/.env
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    depends_on:
+      - traefik
+      - qbittorrent
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.61  
+    ports:
+      - "9696:9696"  # Prowlarr web interface
+    volumes:
+      - /mnt/user/appdata/prowlarr:/config
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"  # Use private network for web access
+      - "traefik.http.routers.prowlarr.rule=Host(`indexer.${DOMAIN}`)"
+      - "traefik.http.routers.prowlarr.tls=true"
+      - "traefik.http.routers.prowlarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+  
+  sonarr: #tv
+    env_file:
+      - /boot/custom/.env
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    depends_on:
+      - traefik
+      - qbittorrent
+      - prowlarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.62
+    ports:
+      - "8989:8989"  # Sonarr web interface
+    volumes:
+      - /mnt/user/appdata/sonarr:/config
+      - /mnt/user/plexmedia/tv:/tv
+      - /mnt/user/plexdownloads:/downloads
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.sonarr.rule=Host(`tv.${DOMAIN}`)"
+      - "traefik.http.routers.sonarr.tls=true"
+      - "traefik.http.routers.sonarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+
+  radarr: #movies
+    env_file:
+      - /boot/custom/.env
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    depends_on:
+      - traefik
+      - qbittorrent
+      - prowlarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.63
+    ports:
+      - "7878:7878"  # Radarr web interface
+    volumes:
+      - /mnt/user/appdata/radarr:/config
+      - /mnt/user/plexmedia/movies:/movies
+      - /mnt/user/plexdownloads:/downloads
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.radarr.rule=Host(`movies.${DOMAIN}`)"
+      - "traefik.http.routers.radarr.tls=true"
+      - "traefik.http.routers.radarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+
+  bazarr: #subtitles
+    env_file:
+      - /boot/custom/.env
+    image: linuxserver/bazarr:latest
+    container_name: bazarr
+    depends_on:
+      - traefik
+      - sonarr
+      - radarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.64
+    ports:
+      - "32400:32400" #web interface
+    volumes:
+      - /mnt/user/appdata/bazarr:/config
+      - /mnt/user/plexmedia/tv:/tv
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.bazarr.rule=Host(`subtitles.${DOMAIN}`)"
+      - "traefik.http.routers.bazarr.tls=true"
+      - "traefik.http.routers.bazarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bazarr.loadbalancer.server.port=32400"
+  
+  overseerr: #requests
+    env_file:
+      - /boot/custom/.env
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    depends_on:
+      - traefik
+      - plex
+      - sonarr
+      - radarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.65
+    ports:
+      - "10000:10000" #web interface
+    volumes:
+      - /mnt/user/appdata/overseerr:/app/config
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.overseerr.rule=Host(`request.${DOMAIN}`)"
+      - "traefik.http.routers.overseerr.tls=true"
+      - "traefik.http.routers.overseerr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.overseerr.loadbalancer.server.port=10000"
+
 
 networks:
   vlan-private:

@@ -1,0 +1,273 @@
+version: '3'
+
+services:
+  traefik:
+    env_file:
+      - /boot/custom/.env
+    image: traefik:3
+    container_name: traefik
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.2
+      vlan-iot:
+        ipv4_address: 192.168.40.2
+      vlan-downloads:
+        ipv4_address: 192.168.60.2
+      vlan-cameras:
+        ipv4_address: 192.168.70.2
+    ports:
+      - "80:80" #http
+      - "443:443" #https
+      - "8080:8080" #traefik dashboard
+    volumes:
+      - /etc/localtime:/etc/localtime:ro #timezone
+      - /var/run/docker.sock:/var/run/docker.sock:ro #docker socket
+      - /mnt/user/appdata/traefik:/etc/traefik #traefik config
+    labels:
+      - "traefik.enable=true"
+      # Dashboard Access only on private network
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`) && IPWhiteList(`192.168.1.0/24`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      # Optional: Basic Auth
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      - "traefik.http.routers.traefik.middlewares=auth"
+    command:
+      # API and Dashboard
+      - "--api.dashboard=true"
+      - "--api.dashboard.statistics.recenterrors=100"
+      # Provider Settings
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.watch=true"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Optional: HTTP to HTTPS redirect
+      #- "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      #- "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Certificate Settings
+      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/etc/traefik/access.log"
+      # Security
+      - "--global.sendAnonymousUsage=false"
+      - "--serversTransport.insecureSkipVerify=true"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.3
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      traefik:
+        condition: service_healthy
+  
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    depends_on:
+      - traefik
+    networks:
+      - vlan-private
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_SCHEDULE=0 0 4 * * 0    # Every Sunday at 4 AM
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false    # Skip stopped containers
+      - WATCHTOWER_ROLLING_RESTART=true     # Update one at a time
+      # Email Notifications
+      - WATCHTOWER_NOTIFICATIONS=email
+      - WATCHTOWER_NOTIFICATION_EMAIL_FROM=${EMAIL_FROM}
+      - WATCHTOWER_NOTIFICATION_EMAIL_TO=${EMAIL}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=smtp.gmail.com
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=587
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=${EMAIL_FROM}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${EMAIL_APP_PASSWORD}
+      # 2. Enhanced Notification Settings
+      - WATCHTOWER_NOTIFICATION_REPORT=true           # Report even when no updates
+      - WATCHTOWER_NOTIFICATION_TEMPLATE="{{range .}}{{.Time.Format \"2006-01-02 15:04:05\"}} - {{.Message}}{{println}}{{end}}"
+    labels:
+      - "traefik.enable=false"
+    restart: unless-stopped
+
+  portainer:
+    env_file:
+      - /boot/custom/.env
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    depends_on:
+      - traefik
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.12
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/user/appdata/portainer:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=America/New_York
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN}`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls=true"
+      - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+
+  dyndns:
+    env_file:
+      - /boot/custom/.env
+    image: qmcgaw/ddns-updater
+    container_name: dyndns
+    depends_on:
+      - traefik
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - PERIOD=5m
+      - PROVIDER1=namecheap
+      - NAMECHEAP_HOST1=* #should match host record
+      - NAMECHEAP_DOMAIN1=${DOMAIN}
+      - NAMECHEAP_PASSWORD1=${NAMECHEAP_DNS_API}
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.4
+    volumes:
+      - /mnt/user/appdata/dyndns:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dyndns.rule=Host(`dyndns.${DOMAIN}`)"
+      - "traefik.http.routers.dyndns.entrypoints=websecure"
+      - "traefik.http.routers.dyndns.tls=true"
+      - "traefik.http.routers.dyndns.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dyndns.loadbalancer.server.port=8000"
+
+  postgres:
+    image: ghcr.io/${GITHUB_REPO}/postgres:latest
+    env_file:
+      - /boot/custom/.env
+    build:
+      context: ./services/postgres
+      dockerfile: Dockerfile
+    container_name: postgres
+    depends_on:
+      - traefik
+    networks:
+      - vlan-private
+    volumes:
+      - /mnt/user/appdata/postgres/data:/var/lib/postgresql/data
+      - /mnt/user/appdata/postgres/backups:/backups
+      #- /mnt/user/appdata/postgres/init:/docker-entrypoint-initdb.d #add back if not using custom image
+    environment:
+      - POSTGRES_MULTIPLE_DATABASES=homeassistant,kw
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+    labels:
+      - "traefik.enable=false"  # Database doesn't need HTTP access
+    restart: unless-stopped
+
+  adminer:
+    env_file:
+      - /boot/custom/.env
+    image: adminer:latest
+    container_name: adminer
+    depends_on:
+      - traefik
+      - postgres
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.11
+    environment:
+      - TZ=${TZ}
+      - ADMINER_DEFAULT_SERVER=postgres
+      - ADMINER_DESIGN=dracula
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminer.rule=Host(`pg.${DOMAIN}`)"
+      - "traefik.http.routers.adminer.tls=true"
+      - "traefik.http.routers.adminer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.adminer.loadbalancer.server.port=8080"
+    restart: unless-stopped
+
+
+networks:
+  vlan-private:
+    driver: macvlan
+    driver_opts:
+      parent: br-1.1
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+
+  vlan-public:
+    driver: macvlan
+    driver_opts:
+      parent: br-1.20
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+
+  vlan-iot:
+    driver: macvlan
+    driver_opts:
+      parent: br-1.40
+    ipam:
+      config:
+        - subnet: 192.168.40.0/24
+          gateway: 192.168.40.1
+
+  vlan-downloads:
+    driver: macvlan
+    driver_opts:
+      parent: br-1.60
+    ipam:
+      config:
+        - subnet: 192.168.60.0/24
+          gateway: 192.168.60.1
+
+  vlan-cameras:
+    driver: macvlan
+    driver_opts:
+      parent: br-1.70
+    ipam:
+      config:
+        - subnet: 192.168.70.0/24
+          gateway: 192.168.70.1

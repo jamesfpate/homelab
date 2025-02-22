@@ -1,0 +1,13 @@
+#this is used in the unraid ui with the community app compose manager to setup basic settings for portainer to initially pull all containers
+version: '3'
+
+services:
+  portainer-init:
+    image: portainer/portainer-ce:latest
+    container_name: portainer-init
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/user/appdata/portainer:/data

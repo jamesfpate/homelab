@@ -1,0 +1,40 @@
+name: Homelab Docker CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths: #file changes that trigger the workflow
+      - 'docker/compose/*.yaml'    
+      - 'docker/services/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: #manual trigger
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Login to GH Container Registry
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Build Postgres
+      - name: Build Postgres
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/services/postgres
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/${{ github.repository }}/postgres:latest
+      
+      # Deploy to Homelab
+      - name: Deploy to Portainer
+        if: github.event_name != 'pull_request'
+        run: |
+          curl -X POST ${{ secrets.PORTAINER_WEBHOOK_URL }}
