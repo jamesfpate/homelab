@@ -213,7 +213,7 @@ services:
 networks:
   vlan-private:    # alias network
     external: true
-    name: br0      
+    name: br0
 
   vlan-public:
     name: vlan-public
