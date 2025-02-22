@@ -174,9 +174,6 @@ services:
 
   postgres:
     image: ghcr.io/${GITHUB_REPO}/postgres:latest
-    build:
-      context: ./services/postgres
-      dockerfile: Dockerfile
     container_name: postgres
     depends_on:
       - traefik
