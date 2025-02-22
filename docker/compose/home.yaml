@@ -1,9 +1,10 @@
 version: '3'
 
+env_file:
+  - /boot/custom/.env
+
 services:
   homeassistant:
-    env_file:
-      - /boot/custom/.env
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     depends_on:
@@ -37,8 +38,6 @@ services:
     restart: unless-stopped
   
   frigate:
-    env_file:
-      - /boot/custom/.env
     image: ghcr.io/blakeblackshear/frigate:stable
     container_name: frigate
     depends_on:

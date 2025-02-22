@@ -1,9 +1,10 @@
 version: '3'
 
+env_file:
+  - /boot/custom/.env
+
 services:
   traefik:
-    env_file:
-      - /boot/custom/.env
     image: traefik:3
     container_name: traefik
     security_opt:
@@ -111,8 +112,6 @@ services:
     restart: unless-stopped
 
   portainer:
-    env_file:
-      - /boot/custom/.env
     image: portainer/portainer-ce:latest
     container_name: portainer
     depends_on:
@@ -151,8 +150,6 @@ services:
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
   dyndns:
-    env_file:
-      - /boot/custom/.env
     image: qmcgaw/ddns-updater
     container_name: dyndns
     depends_on:
@@ -180,8 +177,6 @@ services:
 
   postgres:
     image: ghcr.io/${GITHUB_REPO}/postgres:latest
-    env_file:
-      - /boot/custom/.env
     build:
       context: ./services/postgres
       dockerfile: Dockerfile
@@ -203,8 +198,6 @@ services:
     restart: unless-stopped
 
   adminer:
-    env_file:
-      - /boot/custom/.env
     image: adminer:latest
     container_name: adminer
     depends_on:

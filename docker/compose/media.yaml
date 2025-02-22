@@ -1,9 +1,10 @@
 version: '3'
-services:
 
+env_file:
+  - /boot/custom/.env
+
+services:
   plex:
-    env_file:
-      - /boot/custom/.env
     image: linuxserver/plex:latest
     container_name: plex
     depends_on:
@@ -45,8 +46,6 @@ services:
       - "traefik.http.services.plex.loadbalancer.server.port=32400"
   
   qbittorrent:
-    env_file:
-      - /boot/custom/.env
     image: linuxserver/qbittorrent:latest
     container_name: qbittorrent
     depends_on:
@@ -75,8 +74,6 @@ services:
       - "traefik.http.services.qbit.loadbalancer.server.port=8080"  # Specify the web UI port
 
   prowlarr: #indexer
-    env_file:
-      - /boot/custom/.env
     image: linuxserver/prowlarr:latest
     container_name: prowlarr
     depends_on:
@@ -103,8 +100,6 @@ services:
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
   
   sonarr: #tv
-    env_file:
-      - /boot/custom/.env
     image: linuxserver/sonarr:latest
     container_name: sonarr
     depends_on:
@@ -134,8 +129,6 @@ services:
       - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
 
   radarr: #movies
-    env_file:
-      - /boot/custom/.env
     image: linuxserver/radarr:latest
     container_name: radarr
     depends_on:
@@ -165,8 +158,6 @@ services:
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
   bazarr: #subtitles
-    env_file:
-      - /boot/custom/.env
     image: linuxserver/bazarr:latest
     container_name: bazarr
     depends_on:
@@ -195,8 +186,6 @@ services:
       - "traefik.http.services.bazarr.loadbalancer.server.port=32400"
   
   overseerr: #requests
-    env_file:
-      - /boot/custom/.env
     image: sctx/overseerr:latest
     container_name: overseerr
     depends_on:
