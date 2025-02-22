@@ -17,8 +17,9 @@ services:
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=192.168.1.2:80"
-      - "--entrypoints.websecure.address=192.168.1.2:443"
+      # Bind entrypoints explicitly to container IP
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
       # Certificate resolver
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
@@ -26,10 +27,12 @@ services:
       # HTTP to HTTPS redirect
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Add debug logging temporarily
+      - "--log.level=DEBUG"
     labels:
       - "traefik.enable=true"
       # Dashboard routing with HTTPS
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
