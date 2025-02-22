@@ -2,10 +2,10 @@ version: '3'
 services:
   traefik:
     environment:
-      - EMAIL=${EMAIL}
-      - DOMAIN=${DOMAIN}
-      - TRAEFIK_USER=${TRAEFIK_USER}
-      - TRAEFIK_PASS_HASH=${TRAEFIK_PASS_HASH}
+      - EMAIL
+      - DOMAIN
+      - TRAEFIK_USER
+      - TRAEFIK_PASS_HASH
     image: traefik:3
     container_name: traefik
     networks:
