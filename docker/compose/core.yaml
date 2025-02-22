@@ -59,12 +59,12 @@ services:
       - "--global.sendAnonymousUsage=false"
       - "--serversTransport.insecureSkipVerify=true"
     restart: unless-stopped
-    #healthcheck:
-    #  test: ["CMD", "traefik", "healthcheck"]    # Simpler built-in check
-    #  interval: 30s
-    #  timeout: 10s
-    #  retries: 3
-    #  start_period: 30s
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]    # Simpler built-in check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
   
   cloudflared:
     image: cloudflare/cloudflared:latest
