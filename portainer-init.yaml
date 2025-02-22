@@ -15,6 +15,5 @@ services:
       - /mnt/user/appdata/portainer:/data
 
 networks:
-  network-init:
-    name: network-init
-    driver: bridge  # Use bridge for temporary network
+  br0:
+    external: true
