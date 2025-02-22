@@ -16,9 +16,9 @@ services:
       vlan-cameras:
         ipv4_address: 192.168.70.2
     ports:
-      - "81:80" #http (80 is already in use by unraid)
-      - "443:443" #https
-      - "8080:8080" #traefik dashboard
+      - "192.168.1.2:80:80"
+      - "192.168.1.2:443:443"
+      - "192.168.1.2:8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro #docker socket
