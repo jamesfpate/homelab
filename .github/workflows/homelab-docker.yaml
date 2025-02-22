@@ -38,7 +38,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}/postgres:latest
       
       # Deploy to Homelab
-      - name: Deploy to Portainer
-        if: github.event_name != 'pull_request'
-        run: |
-          curl -X POST ${{ secrets.PORTAINER_WEBHOOK_URL }}
+      #- name: Deploy to Portainer
+      #  if: github.event_name != 'pull_request'
+      #  run: |
+      #    curl -X POST ${{ secrets.PORTAINER_WEBHOOK_URL }}
