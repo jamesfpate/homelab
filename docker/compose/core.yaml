@@ -448,6 +448,8 @@ networks:
           gateway: 192.168.1.1
 
   vlan-public:
+    driver: macvlan
+    driver_opts:
       parent: br0.20
     ipam:
       config:
