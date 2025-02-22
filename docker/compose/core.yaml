@@ -14,19 +14,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - "--api.dashboard=true"          # Enables both API and dashboard
-      - "--api.insecure=false"          # Disable insecure access
+      - "--api.dashboard=true"
+      - "--api.insecure=true"           # Enable insecure access for testing
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
     labels:
       - "traefik.enable=true"
-      # Route for dashboard/api
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.entrypoints=web"
-      # IP whitelist for security
+      # IP whitelist for basic security
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.routers.traefik.middlewares=ipwhitelist"
     restart: unless-stopped
