@@ -16,8 +16,8 @@ services:
       vlan-cameras:
         ipv4_address: 192.168.70.2
     ports:
-      - "192.168.1.2:80:80"
-      - "192.168.1.2:443:443"
+      - "192.168.1.2:81:80"
+      - "192.168.1.2:444:443"
       - "192.168.1.2:8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
