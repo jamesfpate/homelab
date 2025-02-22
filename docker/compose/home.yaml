@@ -1,8 +1,5 @@
 version: '3'
 
-env_file:
-  - /boot/custom/.env
-
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
