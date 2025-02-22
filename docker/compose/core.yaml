@@ -217,7 +217,7 @@ networks:
   vlan-private:
     driver: macvlan
     driver_opts:
-      parent: br-1.1
+      parent: br0.1
     ipam:
       config:
         - subnet: 192.168.1.0/24
@@ -226,7 +226,7 @@ networks:
   vlan-public:
     driver: macvlan
     driver_opts:
-      parent: br-1.20
+      parent: br0.20
     ipam:
       config:
         - subnet: 192.168.20.0/24
@@ -235,7 +235,7 @@ networks:
   vlan-iot:
     driver: macvlan
     driver_opts:
-      parent: br-1.40
+      parent: br0.40
     ipam:
       config:
         - subnet: 192.168.40.0/24
@@ -244,7 +244,7 @@ networks:
   vlan-downloads:
     driver: macvlan
     driver_opts:
-      parent: br-1.60
+      parent: br0.60
     ipam:
       config:
         - subnet: 192.168.60.0/24
@@ -253,7 +253,7 @@ networks:
   vlan-cameras:
     driver: macvlan
     driver_opts:
-      parent: br-1.70
+      parent: br0.70
     ipam:
       config:
         - subnet: 192.168.70.0/24
