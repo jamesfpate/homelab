@@ -3,9 +3,10 @@ version: '3'
 services:
   portainer-init:
     image: portainer/portainer-ce:latest
+    ports:
+      - "9001:9000"
     container_name: portainer-init
     restart: unless-stopped
-    network_mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/portainer:/data
