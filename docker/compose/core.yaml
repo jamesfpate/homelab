@@ -16,7 +16,7 @@ services:
       vlan-cameras:
         ipv4_address: 192.168.70.2
     ports:
-      - "80:80" #http
+      - "81:80" #http (80 is already in use by unraid)
       - "443:443" #https
       - "8080:8080" #traefik dashboard
     volumes:
@@ -60,7 +60,9 @@ services:
       - "--serversTransport.insecureSkipVerify=true"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/rawdata"]
+      # or
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
