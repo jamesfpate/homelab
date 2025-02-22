@@ -7,39 +7,42 @@ services:
       vlan-private:
         ipv4_address: 192.168.1.2
     ports:
-      - "192.168.1.2:80:80"
-      - "192.168.1.2:443:443"
+      - "192.168.1.2:80:80"     # For Let's Encrypt only
+      - "192.168.1.2:443:443"   # HTTPS
+      - "192.168.1.2:8080:8080" # Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - "--api=true"
+      # API and Dashboard
       - "--api.dashboard=true"
+      - "--api.insecure=false"
+      # Docker provider
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # Bind entrypoints explicitly to container IP
+      # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      # Certificate resolver
-      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-      # HTTP to HTTPS redirect
+      # HTTPS Redirect
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      # Add debug logging temporarily
-      - "--log.level=DEBUG"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     labels:
       - "traefik.enable=true"
-      # Dashboard routing with HTTPS
+      # Dashboard routing
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"  # Specify the port
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      # Security middlewares
+      # Security (combine both)
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth"
     restart: unless-stopped
 
