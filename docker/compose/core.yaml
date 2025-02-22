@@ -60,7 +60,7 @@ services:
       - "--serversTransport.insecureSkipVerify=true"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ping"]
+      test: ["CMD", "traefik", "healthcheck"]    # Simpler built-in check
       interval: 30s
       timeout: 10s
       retries: 3
