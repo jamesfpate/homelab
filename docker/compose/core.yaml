@@ -13,6 +13,9 @@ services:
     networks:
       vlan-private:
         ipv4_address: 192.168.1.2
+      vlan-iot:
+      vlan-downloads:
+      vlan-cameras:
     ports:
       - "192.168.1.2:80:80"     # For Let's Encrypt only
       - "192.168.1.2:443:443"   # HTTPS
