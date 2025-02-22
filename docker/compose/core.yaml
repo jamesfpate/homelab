@@ -54,11 +54,52 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       # Security (combine both)
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}"
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth" #add back ,auth
     restart: unless-stopped
 
+
 networks:
-  vlan-private:
+  vlan-private:    # alias network
     external: true
     name: br0
+
+  vlan-public:
+    name: vlan-public
+    driver: macvlan
+    driver_opts:
+      parent: br0.20
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+
+  vlan-iot:
+    name: vlan-iot
+    driver: macvlan
+    driver_opts:
+      parent: br0.40
+    ipam:
+      config:
+        - subnet: 192.168.40.0/24
+          gateway: 192.168.40.1
+
+  vlan-downloads:
+    name: vlan-downloads
+    driver: macvlan
+    driver_opts:
+      parent: br0.60
+    ipam:
+      config:
+        - subnet: 192.168.60.0/24
+          gateway: 192.168.60.1
+
+  vlan-cameras:
+    name: vlan-cameras
+    driver: macvlan
+    driver_opts:
+      parent: br0.70
+    ipam:
+      config:
+        - subnet: 192.168.70.0/24
+          gateway: 192.168.70.1
