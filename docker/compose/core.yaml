@@ -36,6 +36,11 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
+      #logs
+      - "--log.level=DEBUG"  # Set to INFO in production
+      - "--log.filePath=/etc/traefik/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/etc/traefik/access.log"
     labels:
       - "traefik.enable=true"
       # Dashboard routing
