@@ -1,6 +1,11 @@
 version: '3'
 services:
   traefik:
+    environment:
+      - EMAIL=${EMAIL}
+      - DOMAIN=${DOMAIN}
+      - TRAEFIK_USER=${TRAEFIK_USER}
+      - TRAEFIK_PASS_HASH=${TRAEFIK_PASS_HASH}
     image: traefik:3
     container_name: traefik
     networks:
@@ -42,8 +47,8 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       # Security (combine both)
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-      #- "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      - "traefik.http.routers.dashboard.middlewares=ipwhitelist"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth"
     restart: unless-stopped
 
 networks:
