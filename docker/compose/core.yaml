@@ -46,8 +46,8 @@ services:
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
       # Security
-      - "--global.sendAnonymousUsage=false"
-      - "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
+      #- "--global.sendAnonymousUsage=false"
+      #- "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
     labels:
       - "traefik.enable=true"
      # Security middlewares
