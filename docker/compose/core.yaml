@@ -27,11 +27,7 @@ services:
       # 1. Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
-      - "--entrypoints.ping.address=:8082"
       # 2. Core features/providers
-      - "--api=true"
-      - "--ping=true"
-      - "--ping.entrypoint=ping"
       - "--api.dashboard=true"
       - "--api.insecure=false"
       - "--providers.docker=true"
@@ -76,13 +72,6 @@ services:
         max-size: "10m"
         max-file: "1"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-check-certificate --spider --quiet http://localhost:8082/ping || exit 1"]
-      #test: ["CMD", "traefik", "healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
 networks:
   vlan-private:    # alias network
