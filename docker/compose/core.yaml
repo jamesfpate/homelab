@@ -30,8 +30,6 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       # Entrypoints
-      #- "--entrypoints.web.address=:80"
-      #- "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
       # HTTPS Redirect
@@ -47,6 +45,9 @@ services:
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
+      # Security
+      - "--global.sendAnonymousUsage=false"
+      - "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
     labels:
       - "traefik.enable=true"
       # Dashboard routing
