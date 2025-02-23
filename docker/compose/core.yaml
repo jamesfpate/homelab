@@ -34,8 +34,8 @@ services:
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
       # HTTPS Redirect
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      #- "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      #- "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       # DNS Challenge config
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
@@ -48,10 +48,9 @@ services:
       - "--accesslog.filepath=/etc/traefik/access.log"
       # Security
       #- "--global.sendAnonymousUsage=false"
-      #- "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
+      #- "--serversTransport.insecureSkipVerify=true" #set to true if having ssl issues
       #tls handeling
       - "--providers.docker.network=vlan-private"
-      - "--certificatesresolvers.letsencrypt.acme.keytype=RSA4096"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
     labels:
       - "traefik.enable=true"
@@ -80,8 +79,8 @@ services:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
       interval: 20s
       timeout: 5s
-      retries: 6
-      start_period: 45s
+      retries: 10
+      start_period: 60s
 
 networks:
   vlan-private:    # alias network
