@@ -19,6 +19,7 @@ services:
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.traefik.address=:8080"
       - "--log.level=DEBUG"
     labels:
       - "traefik.enable=true"
@@ -26,9 +27,10 @@ services:
       #- "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       #- "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       # Dashboard routing
-      - "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`)"
+      - "traefik.http.routers.dashboard.rule=PathPrefix(`/`)"
+      #- "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`)"
       - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=web"
+      - "traefik.http.routers.dashboard.entrypoints=traefik"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080" 
       #- "traefik.http.routers.dashboard.middlewares=ipwhitelist"
     restart: unless-stopped
