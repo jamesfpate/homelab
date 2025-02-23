@@ -61,12 +61,26 @@ services:
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      # Security (combine both)
-      #- "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-      #- "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      #- "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth" #add back ,auth
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]  # Use built-in healthcheck
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.3
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      traefik:
+        condition: service_healthy
 
 networks:
   vlan-private:    # alias network
