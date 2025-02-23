@@ -75,7 +75,13 @@ services:
         max-size: "10m"
         max-file: "1"
     restart: unless-stopped
-#    healthcheck:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f https://traefik.${DOMAIN}/api/version || exit 1"]
+      # -k ignores SSL certificate validation
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 #      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
 #      interval: 20s
 #      timeout: 5s
