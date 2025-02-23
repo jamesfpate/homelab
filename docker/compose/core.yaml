@@ -29,7 +29,7 @@ services:
       - "--entrypoints.websecure.address=192.168.1.2:443"
       - "--entrypoints.ping.address=:8082"
       # 2. Core features/providers
-      - "--api=true"
+      #- "--api=true"
       - "--ping=true" 
       - "--ping.entrypoint=ping"
       - "--api.dashboard=true"
@@ -82,7 +82,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 10s
 
 networks:
   vlan-private:    # alias network
