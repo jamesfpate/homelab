@@ -26,7 +26,7 @@ services:
       # 1. Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
-      - "--entrypoints.traefik-ping.address=192.168.1.2:8082"
+      - "--entrypoints.traefik-ping.address=:8082"
       # 2. Core features/providers
       - "--api.dashboard=true"
       - "--api.insecure=false"
