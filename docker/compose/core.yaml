@@ -35,5 +35,6 @@ services:
     restart: unless-stopped
 
 networks:
-  vlan-private:
+  vlan-private:    # alias network
     external: true
+    name: br0
