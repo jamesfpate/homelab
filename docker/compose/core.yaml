@@ -42,19 +42,26 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
       #traefik logs
-      - "--log.level=DEBUG"  # Set to INFO in production
+      - "--log.level="  # Set to INFO in production
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
       # Security
       #- "--global.sendAnonymousUsage=false"
       #- "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
+      #tls handeling
+      - "--providers.docker.network=vlan-private"
+      - "--certificatesresolvers.letsencrypt.acme.keytype=RSA4096"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
     labels:
       - "traefik.enable=true"
      # Security middlewares
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Permissions-Policy=interest-cohort=()" # FLoC/ECH prevention header to fix chrome issues
+      #floc/ech prevention headers
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Permissions-Policy=interest-cohort=()"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Alt-Svc=h3=\":443\"; ma=86400"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Strict-Transport-Security=max-age=31536000; includeSubDomains"
       # Dashboard routing
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
