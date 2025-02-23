@@ -29,8 +29,9 @@ services:
       - "--entrypoints.websecure.address=192.168.1.2:443"
       - "--entrypoints.ping.address=:8082"
       # 2. Core features/providers
-      - "--api.ping=true"  # Change this from --ping=true
-      - "--api.ping.entrypoint=ping"  # Change this from --ping.entrypoint=ping
+      - "--api=true"
+      - "--ping=true" 
+      - "--ping.entrypoint=ping"
       - "--api.dashboard=true"
       - "--api.insecure=false"
       - "--providers.docker=true"
@@ -76,7 +77,8 @@ services:
         max-file: "1"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
+      test: ["CMD-SHELL", "wget --no-check-certificate --spider --quiet http://localhost:8082/ping || exit 1"]
+      #test: ["CMD", "traefik", "healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 10
