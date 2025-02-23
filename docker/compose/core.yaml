@@ -65,7 +65,7 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
       interval: 10s
       timeout: 5s
       retries: 6
