@@ -62,12 +62,12 @@ services:
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
     restart: unless-stopped
-#    healthcheck:
-#      test: ["CMD", "traefik", "healthcheck"]  # Use built-in healthcheck
-#      interval: 15s
-#      timeout: 10s
-#      retries: 3
-#      start_period: 45s
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]  # Use built-in healthcheck
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
 
 networks:
