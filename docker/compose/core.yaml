@@ -23,7 +23,7 @@ services:
       #- "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       #- "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       # Dashboard routing
-      #- "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`) || Host(`traefik.local`)"
+      - "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`) || Host(`traefik.local`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080"  # Add this back
