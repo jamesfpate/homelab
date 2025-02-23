@@ -26,12 +26,11 @@ services:
       - "--entrypoints.web.address=192.168.1.2:80"
       # 2. Core features/providers
       - "--api.dashboard=true"
-      - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=vlan-private"
       # 6. Logging 
-      - "--log.level="
+      - "--log.level=DEBUG"
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
