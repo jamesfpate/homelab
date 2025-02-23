@@ -15,7 +15,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik #traefik config
     command:
-      - "--api.insecure=false"
+      - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
@@ -30,7 +30,6 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080" 
-      - "traefik.http.routers.dashboard.middlewares=no-auth@internal"
       #- "traefik.http.routers.dashboard.middlewares=ipwhitelist"
     restart: unless-stopped
 
