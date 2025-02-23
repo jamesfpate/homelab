@@ -34,8 +34,8 @@ services:
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
       # HTTPS Redirect
-      #- "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      #- "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       #- "--serversTransport.insecureSkipVerify=true" #set to true if having ssl issues
       # DNS Challenge config
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
@@ -75,12 +75,12 @@ services:
         max-size: "10m"
         max-file: "1"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
-      interval: 20s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+#    healthcheck:
+#      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
+#      interval: 20s
+#      timeout: 5s
+#      retries: 10
+#      start_period: 60s
 
 networks:
   vlan-private:    # alias network
