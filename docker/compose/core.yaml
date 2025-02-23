@@ -37,4 +37,3 @@ services:
 networks:
   vlan-private:
     external: true
-    name: br0
