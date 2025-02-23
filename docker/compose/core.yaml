@@ -26,11 +26,9 @@ services:
       # API and Dashboard
       - "--api.dashboard=true"
       - "--api.insecure=false"
-      - "--api.dashboard.statistics.recenterrors=100"
       # Docker provider
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.watch=true"
       # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
