@@ -25,6 +25,7 @@ services:
     command:
       - "--ping=true"
       - "--ping.entrypoint=ping"
+      - "--ping.entrypoint.address=192.168.1.2:8080"
       # API and Dashboard 
       - "--api.dashboard=true"
       - "--api.insecure=false"
@@ -78,9 +79,9 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping.entrypoint=traefik"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 10
       start_period: 30s
 #      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
 #      interval: 20s
