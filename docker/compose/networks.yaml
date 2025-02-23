@@ -1,3 +1,15 @@
+services:
+  network-init:
+    image: alpine:latest
+    command: "true"
+    networks:
+      - vlan-private
+    deploy:
+      restart_policy:
+        condition: none
+    profiles:
+      - donotstart  # This prevents it from actually starting
+
 networks:
   vlan-private:    # alias network
     external: true
