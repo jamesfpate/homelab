@@ -17,9 +17,7 @@ services:
       vlan-cameras:
     ports:
       - "192.168.1.2:80:80"     # For Let's Encrypt only
-      - "192.168.1.2:443:443"   # HTTPS
       - "192.168.1.2:8080:8080" # Dashboard
-      - "192.168.1.2:8082:8082" # Ping
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
@@ -47,7 +45,7 @@ services:
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.local`)"
       - "traefik.http.routers.dashboard.service=api@internal"
-      #- "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
     logging: #docker logging
       driver: "json-file"
       options:
