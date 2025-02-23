@@ -25,7 +25,7 @@ services:
       # Dashboard routing
       #- "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`) || Host(`traefik.local`)"
       - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=web"j
+      - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080"  # Add this back
       #- "traefik.http.routers.dashboard.middlewares=ipwhitelist"
     restart: unless-stopped
