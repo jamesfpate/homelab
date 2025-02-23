@@ -25,6 +25,7 @@ services:
       # 1. Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
       # 2. Core features/providers
+      - "--api=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
