@@ -73,6 +73,14 @@ services:
         max-size: "10m"
         max-file: "1"
     restart: unless-stopped
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "wget --no-check-certificate --spider --quiet http://localhost:8082/ping && wget --no-check-certificate --spider --quiet http://localhost:8080/api/version || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 networks:
   vlan-private:    # alias network
