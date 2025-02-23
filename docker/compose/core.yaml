@@ -79,7 +79,7 @@ services:
         max-file: "1"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping.entrypoint=traefik"]
+      test: ["CMD", "traefik", "healthcheck", "--ping.entrypoint=ping"]
       interval: 10s
       timeout: 5s
       retries: 10
