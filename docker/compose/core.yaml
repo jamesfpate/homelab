@@ -26,61 +26,33 @@ services:
     command:
       # 1. Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
-      - "--entrypoints.websecure.address=192.168.1.2:443"
       # 2. Core features/providers
-      - "--api=true"
       - "--api.dashboard=true"
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=vlan-private"
-      # 4. HTTPS/TLS config
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      #- "--serversTransport.insecureSkipVerify=true"
-      # 5. Certificate configuration
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
-      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
       # 6. Logging 
       - "--log.level="
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
-      #- "--global.sendAnonymousUsage=false"
     labels:
       - "traefik.enable=true"
      # Security middlewares
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      #floc/ech prevention headers
-      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Permissions-Policy=interest-cohort=()"
-      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Alt-Svc=h3=\":443\"; ma=86400"
-      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Strict-Transport-Security=max-age=31536000; includeSubDomains"
       # Dashboard routing
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.local`)"
       - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls=true"
-      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      #- "traefik.http.services.dashboard.loadbalancer.server.port=8080"
     logging: #docker logging
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "1"
     restart: unless-stopped
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "wget --no-check-certificate --spider --quiet http://localhost:8080/api/version || exit 1"
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
 networks:
   vlan-private:    # alias network
