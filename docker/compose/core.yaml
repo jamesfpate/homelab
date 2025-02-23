@@ -41,6 +41,7 @@ services:
       - "traefik.enable=true"
      # Security middlewares
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"  # Just this one
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       # Dashboard routing
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
