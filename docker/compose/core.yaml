@@ -76,7 +76,7 @@ services:
         max-file: "1"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping", "--ping.endpoint=http://localhost:8082/ping"]
+      test: ["CMD", "traefik", "healthcheck", "--ping", "--ping-entrypoint=http://localhost:8082/ping"]
       interval: 10s
       timeout: 5s
       retries: 10
