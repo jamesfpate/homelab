@@ -42,7 +42,7 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
       #traefik logs
-      - "--log.level=DEBUG"  # Set to INFO in production
+      - "--log.level=INFO"  # Set to INFO in production
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
