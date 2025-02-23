@@ -9,7 +9,6 @@ services:
     ports:
       - "192.168.1.2:80:80"
       - "192.168.1.2:8080:8080"
-
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -20,6 +19,9 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.traefik.address=:8080"
+      - "--entrypoints.websecure.address=:443" 
+      - "--entrypoints.websecure.http.redirections.entryPoint.to=web"
+      - "--entrypoints.websecure.http.redirections.entryPoint.scheme=http"
       - "--log.level=DEBUG"
     labels:
       - "traefik.enable=true"
@@ -27,9 +29,6 @@ services:
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       - "traefik.http.middlewares.security-headers.headers.sslRedirect=false"
-      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"
-      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Forwarded-Proto=http"
       # Dashboard routing
       - "traefik.http.routers.dashboard.rule=PathPrefix(`/`)"
       #- "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`)"
@@ -39,7 +38,48 @@ services:
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
     restart: unless-stopped
 
+
 networks:
   vlan-private:    # alias network
     external: true
     name: br0
+
+  vlan-public:
+    name: vlan-public
+    driver: macvlan
+    driver_opts:
+      parent: br0.20
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+
+  vlan-iot:
+    name: vlan-iot
+    driver: macvlan
+    driver_opts:
+      parent: br0.40
+    ipam:
+      config:
+        - subnet: 192.168.40.0/24
+          gateway: 192.168.40.1
+
+  vlan-downloads:
+    name: vlan-downloads
+    driver: macvlan
+    driver_opts:
+      parent: br0.60
+    ipam:
+      config:
+        - subnet: 192.168.60.0/24
+          gateway: 192.168.60.1
+
+  vlan-cameras:
+    name: vlan-cameras
+    driver: macvlan
+    driver_opts:
+      parent: br0.70
+    ipam:
+      config:
+        - subnet: 192.168.70.0/24
+          gateway: 192.168.70.1
