@@ -24,37 +24,35 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - "--ping=true"
-      - "--entrypoints.ping.address=192.168.1.2:8082"
-      - "--ping.entrypoint=ping"
-      # API and Dashboard 
-      - "--api.dashboard=true"
-      - "--api.insecure=false"
-      # Docker provider
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      # Entrypoints
+      # 1. Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
-      # HTTPS Redirect
+      - "--entrypoints.ping.address=192.168.1.2:8082"
+      # 2. Core features/providers
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=vlan-private"
+      - "--ping=true"
+      # 3. Feature configurations
+      - "--ping.entrypoint=ping"
+      # 4. HTTPS/TLS config
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      #- "--serversTransport.insecureSkipVerify=true" #set to true if having ssl issues
-      # DNS Challenge config
+      #- "--serversTransport.insecureSkipVerify=true"
+      # 5. Certificate configuration
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
-      #traefik logs
-      - "--log.level="  # Set to INFO in production
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
+      # 6. Logging 
+      - "--log.level="
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
-      # Security
       #- "--global.sendAnonymousUsage=false"
-      #tls handeling
-      - "--providers.docker.network=vlan-private"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
     labels:
       - "traefik.enable=true"
      # Security middlewares
