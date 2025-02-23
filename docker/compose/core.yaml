@@ -8,13 +8,12 @@ services:
         ipv4_address: 192.168.1.2
     ports:
       - "192.168.1.2:80:80"
-      - "192.168.1.2:8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik #traefik config
     command:
-      - "--api.insecure=true" 
+      - "--api.insecure=false"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
@@ -28,7 +27,7 @@ services:
       - "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`) || Host(`traefik.local`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=web"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"  # Add this back
+      - "traefik.http.services.dashboard.loadbalancer.server.port=80"  # Add this back
       #- "traefik.http.routers.dashboard.middlewares=ipwhitelist"
     restart: unless-stopped
 
