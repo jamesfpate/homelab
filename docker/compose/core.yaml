@@ -23,6 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
+      - "--ping=true"  
       # API and Dashboard 
       - "--api.dashboard=true"
       - "--api.insecure=false"
@@ -63,10 +64,11 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
     restart: unless-stopped
     healthcheck: #works without this
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 10s
       timeout: 5s
       retries: 6
+      start_period: 30s
 
 networks:
   vlan-private:    # alias network
