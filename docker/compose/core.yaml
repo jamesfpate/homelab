@@ -62,13 +62,11 @@ services:
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]  # Use built-in healthcheck
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
+    healthcheck: #works without this
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 networks:
   vlan-private:    # alias network
