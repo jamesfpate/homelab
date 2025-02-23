@@ -19,7 +19,6 @@ services:
       - "192.168.1.2:80:80"     # For Let's Encrypt only
       - "192.168.1.2:443:443"   # HTTPS
       - "192.168.1.2:8080:8080" # Dashboard
-      - "192.168.1.2:8082:8082" # Ping
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
@@ -27,7 +26,7 @@ services:
       # 1. Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
-      - "--entrypoints.ping.address=192.168.1.2:8082"
+      - "--entrypoints.traefik-ping.address=192.168.1.2:8082"
       # 2. Core features/providers
       - "--api.dashboard=true"
       - "--api.insecure=false"
@@ -36,7 +35,7 @@ services:
       - "--providers.docker.network=vlan-private"
       - "--ping=true"
       # 3. Feature configurations
-      - "--ping.entrypoint=ping"
+      - "--ping.entrypoint=traefik-ping"
       # 4. HTTPS/TLS config
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
@@ -77,7 +76,7 @@ services:
         max-file: "1"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping.entrypoint=ping"]
+      test: ["CMD", "traefik", "healthcheck", "--ping.entrypoint=traefik-ping"]
       interval: 10s
       timeout: 5s
       retries: 10
