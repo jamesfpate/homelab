@@ -19,12 +19,13 @@ services:
       - "192.168.1.2:80:80"     # For Let's Encrypt only
       - "192.168.1.2:443:443"   # HTTPS
       - "192.168.1.2:8080:8080" # Dashboard
+      - "192.168.1.2:8082:8082" # Ping
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
       - "--ping=true"
-      - "--entrypoints.ping.address=192.168.1.2:8080"
+      - "--entrypoints.ping.address=192.168.1.2:8082"
       - "--ping.entrypoint=ping"
       # API and Dashboard 
       - "--api.dashboard=true"
