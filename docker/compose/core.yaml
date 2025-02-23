@@ -42,7 +42,7 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
       #traefik logs
-      - "--log.level=INFO"  # Set to INFO in production
+      - "--log.level=DEBUG"  # Set to INFO in production
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
@@ -71,7 +71,7 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
-      interval: 10s
+      interval: 20s
       timeout: 5s
       retries: 6
       start_period: 45s
