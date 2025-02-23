@@ -25,39 +25,43 @@ services:
     command:
       # API and Dashboard
       - "--api.dashboard=true"
-      - "--api.insecure=false"
-      # Docker provider
+      - "--api.insecure=false"  
+      - "--api.dashboard.statistics.recenterrors=100"
+      # Docker Provider 
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # Entrypoints
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      # HTTPS Redirect
+      - "--providers.docker.watch=true"
+      # Entrypoints 
+      - "--entrypoints.web.address=192.168.1.2:80"
+      - "--entrypoints.websecure.address=192.168.1.2:443"
+      # Optional: HTTP to HTTPS redirect
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      # DNS Challenge config
+      # Certificate Challenge Settings
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
-      #logs
-      - "--log.level=DEBUG"  # Set to INFO in production
+      # Logging
+      - "--log.level=INFO"
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
+      # Security
+      - "--global.sendAnonymousUsage=false"
+      - "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
     labels:
       - "traefik.enable=true"
-      # Dashboard routing
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls=true"
-      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      # Security (combine both)
+      # Security middlewares
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth" #add back ,auth
+      # Dashboard Settings
+      - "traefik.http.routers.traefik.middlewares=ipwhitelist,auth"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
     restart: unless-stopped
 
 

@@ -2,6 +2,12 @@ version: '3'
 
 services:
   traefik:
+     environment:
+      - EMAIL
+      - DOMAIN
+      - TRAEFIK_USER
+      - TRAEFIK_PASS_HASH
+      - CLOUDFLARE_DNS_API_TOKEN
     image: traefik:3
     container_name: traefik
     security_opt:
@@ -22,39 +28,44 @@ services:
       - /mnt/user/appdata/traefik:/etc/traefik #traefik config
     labels:
       - "traefik.enable=true"
-      # Dashboard Access only on private network
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`) && IPWhiteList(`192.168.1.0/24`)"
+      # Security middlewares
+      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      # Dashboard Settings
+      - "traefik.http.routers.traefik.middlewares=ipwhitelist,auth"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls=true"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.traefik.service=api@internal"
-      # Optional: Basic Auth
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      - "traefik.http.routers.traefik.middlewares=auth"
     command:
       # API and Dashboard
       - "--api.dashboard=true"
+      - "--api.insecure=false"  
       - "--api.dashboard.statistics.recenterrors=100"
-      # Provider Settings
+      # Docker Provider 
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.watch=true"
-      # Entrypoints - this is ip specific so it doesnt conflict with unraid
+      # Entrypoints 
       - "--entrypoints.web.address=192.168.1.2:80"
       - "--entrypoints.websecure.address=192.168.1.2:443"
       # Optional: HTTP to HTTPS redirect
-      #- "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      #- "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      # Certificate Settings
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Certificate Challenge Settings
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
       # Logging
       - "--log.level=INFO"
+      - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
       - "--accesslog.filepath=/etc/traefik/access.log"
       # Security
       - "--global.sendAnonymousUsage=false"
-      - "--serversTransport.insecureSkipVerify=true"
+      - "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "traefik", "healthcheck"]  # Use built-in healthcheck
