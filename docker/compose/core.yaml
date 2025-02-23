@@ -26,6 +26,9 @@ services:
       # Security middleware 
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      - "traefik.http.middlewares.security-headers.headers.sslRedirect=false"
+      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"
       - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Forwarded-Proto=http"
       # Dashboard routing
       - "traefik.http.routers.dashboard.rule=PathPrefix(`/`)"
