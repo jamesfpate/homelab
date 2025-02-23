@@ -24,8 +24,8 @@ services:
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
       - "--ping=true"
+      - "--entrypoints.ping.address=192.168.1.2:8080"
       - "--ping.entrypoint=ping"
-      - "--ping.entrypoint.address=192.168.1.2:8080"
       # API and Dashboard 
       - "--api.dashboard=true"
       - "--api.insecure=false"
