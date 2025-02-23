@@ -41,7 +41,7 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme.json"
-      #logs
+      #traefik logs
       - "--log.level=DEBUG"  # Set to INFO in production
       - "--log.filePath=/etc/traefik/traefik.log"
       - "--accesslog=true"
@@ -63,13 +63,18 @@ services:
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+    logging: #docker logging
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/version"]
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 30s
+      start_period: 45s
 
 networks:
   vlan-private:    # alias network
