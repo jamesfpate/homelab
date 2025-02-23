@@ -23,7 +23,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - "--ping=true"  
+      - "--ping=true"
+      - "--ping.entrypoint=ping"
       # API and Dashboard 
       - "--api.dashboard=true"
       - "--api.insecure=false"
