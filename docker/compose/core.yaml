@@ -11,24 +11,23 @@ services:
       - "192.168.1.2:8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-command:
-  - "--api.insecure=false"  # Change back to secure
-  - "--api.dashboard=true"
-  - "--providers.docker=true"
-  - "--entrypoints.web.address=:80"
-  - "--log.level=DEBUG"
-
-labels:
-  - "traefik.enable=true"
-  # Basic security
-  - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-  #- "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-  # Dashboard routing
-  - "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`) || Host(`traefik.local`)"
-  - "traefik.http.routers.dashboard.service=api@internal"
-  - "traefik.http.routers.dashboard.entrypoints=web"
-  - "traefik.http.routers.dashboard.middlewares=ipwhitelist"
-    restart: unless-stopped
+  command:
+    - "--api.insecure=false"  # Change back to secure
+    - "--api.dashboard=true"
+    - "--providers.docker=true"
+    - "--entrypoints.web.address=:80"
+    - "--log.level=DEBUG"
+  labels:
+    - "traefik.enable=true"
+    # Basic security
+    - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+    #- "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+    # Dashboard routing
+    - "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`) || Host(`traefik.local`)"
+    - "traefik.http.routers.dashboard.service=api@internal"
+    - "traefik.http.routers.dashboard.entrypoints=web"
+    - "traefik.http.routers.dashboard.middlewares=ipwhitelist"
+  restart: unless-stopped
 
 networks:
   vlan-private:
