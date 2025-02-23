@@ -54,8 +54,9 @@ services:
      # Security middlewares
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Permissions-Policy=interest-cohort=()" # FLoC/ECH prevention header to fix chrome issues
       # Dashboard routing
-      - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth"
+      - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
