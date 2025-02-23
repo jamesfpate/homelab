@@ -26,18 +26,7 @@ services:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro #docker socket
       - /mnt/user/appdata/traefik:/etc/traefik #traefik config
-    labels:
-      - "traefik.enable=true"
-      # Security middlewares
-      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      # Dashboard Settings
-      - "traefik.http.routers.traefik.middlewares=ipwhitelist,auth"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+
     command:
       # API and Dashboard
       - "--api.dashboard=true"
@@ -66,6 +55,18 @@ services:
       # Security
       - "--global.sendAnonymousUsage=false"
       - "--serversTransport.insecureSkipVerify=false" #set to true if having ssl issues
+    labels:
+      - "traefik.enable=true"
+      # Security middlewares
+      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      # Dashboard Settings
+      - "traefik.http.routers.traefik.middlewares=ipwhitelist,auth"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "traefik", "healthcheck"]  # Use built-in healthcheck
