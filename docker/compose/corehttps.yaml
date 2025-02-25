@@ -1,55 +1,63 @@
 version: '3'
 services:
   traefik:
+    environment:
+      - EMAIL
+      - DOMAIN
+      - TRAEFIK_USER
+      - TRAEFIK_PASS_HASH
+      - CLOUDFLARE_DNS_API_TOKEN
     image: traefik:3
     container_name: traefik
     networks:
       vlan-private:
         ipv4_address: 192.168.1.2
+      vlan-iot:
+      vlan-downloads:
+      vlan-cameras:
     ports:
-      - "192.168.1.2:80:80"
-      - "192.168.1.2:8080:8080"
-      - "192.168.1.2:443:443"
+      - "192.168.1.2:80:80"     # For Let's Encrypt only
+      - "192.168.1.2:8080:8080" # Dashboard
     volumes:
-      - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /mnt/user/appdata/traefik:/etc/traefik #traefik config
+      - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - "--api.insecure=false"
+      # 1. Entrypoints 
+      - "--entrypoints.web.address=192.168.1.2:80"
+      # 2. Core features/providers
+      - "--api=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.traefik.address=:8080"
-      - "--entrypoints.websecure.address=:443" 
-      - "--entrypoints.websecure.http.redirections.entryPoint.to=web"
-      - "--entrypoints.websecure.http.redirections.entryPoint.scheme=http"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=vlan-private"
+      # 6. Logging 
       - "--log.level=DEBUG"
+      - "--log.filePath=/etc/traefik/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/etc/traefik/access.log"
     labels:
       - "traefik.enable=true"
-      # Security middleware 
+     # Security middlewares
       - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"  # Just this one
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      - "traefik.http.middlewares.security-headers.headers.sslRedirect=false"
       # Dashboard routing
-      - "traefik.http.routers.dashboard.rule=PathPrefix(`/`)"
-      #- "traefik.http.routers.dashboard.rule=Host(`192.168.1.2`)"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=traefik"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080" 
+      - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.routers.dashboard.middlewares=ipwhitelist,auth,security-headers"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.local`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+    logging: #docker logging
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
     restart: unless-stopped
 
-
 networks:
-  vlan-private: 
-    driver: bridge
-
-  socket_proxy:
-    name: socket_proxy
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.2.0/24
+  vlan-private:    # alias network
+    external: true
+    name: br0
 
   vlan-public:
     name: vlan-public

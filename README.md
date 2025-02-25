@@ -14,6 +14,7 @@ Setup for unraid homelab
 192.168.1.2 - Traefik - traefik.domain.com
 192.168.1.3 - Cloudflare Tunnel
 192.168.1.4 - Dyndns - dyndns.domain.com
+192.168.5.5 - Socket Proxy
 192.168.1.10 - Plex - plex.domain.com
 192.168.1.11 - Adminer - pg.domain.com
 192.168.1.12 - Portainer - portainer.domain.com
