@@ -42,53 +42,21 @@ services:
 
 networks:
   vlan-private: 
-    driver: bridge
+    external: true
 
   socket_proxy:
-    name: socket_proxy
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.2.0/24
+    external: true
 
   vlan-public:
-    name: vlan-public
-    driver: macvlan
-    driver_opts:
-      parent: br0.20
-    ipam:
-      config:
-        - subnet: 192.168.20.0/24
-          gateway: 192.168.20.1
+    external: true
 
   vlan-iot:
-    name: vlan-iot
-    driver: macvlan
-    driver_opts:
-      parent: br0.40
-    ipam:
-      config:
-        - subnet: 192.168.40.0/24
-          gateway: 192.168.40.1
+    external: true
 
   vlan-downloads:
-    name: vlan-downloads
-    driver: macvlan
-    driver_opts:
-      parent: br0.60
-    ipam:
-      config:
-        - subnet: 192.168.60.0/24
-          gateway: 192.168.60.1
+    external: true
 
   vlan-cameras:
-    name: vlan-cameras
-    driver: macvlan
-    driver_opts:
-      parent: br0.70
-    ipam:
-      config:
-        - subnet: 192.168.70.0/24
-          gateway: 192.168.70.1
+    external: true
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
