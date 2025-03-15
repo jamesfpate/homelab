@@ -2,6 +2,7 @@ version: '3'
 #https://docs.docker.com/engine/network/drivers/bridge/
 #https://www.simplehomelab.com/docker-media-server-2024/#1_Socket_Proxy_-_Secure_Proxy_for_the_Docker_Socket
 services:
+  #traefik reverse proxy
   socket-proxy:
     container_name: socket-proxy
     image: tecnativa/docker-socket-proxy
