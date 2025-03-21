@@ -86,7 +86,7 @@ services:
       - "traefik.http.routers.traefik-rtr.middlewares=auth" # For Basic HTTP Authentication
     restart: unless-stopped
     env_file:
-      - /mnt/user/appdata/env/.env
+      - ./.env
 
 networks:
   vlan-private:    # alias network
