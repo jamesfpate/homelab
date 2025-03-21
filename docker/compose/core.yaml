@@ -92,7 +92,7 @@ services:
 
 secrets:
   env_file:
-    file: /mnt/user/appdata/env/.env
+    file: /mnt/user/appdata/env/env.txt
 
 networks:
   vlan-private:    # alias network
