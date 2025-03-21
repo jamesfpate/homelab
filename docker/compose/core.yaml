@@ -89,6 +89,7 @@ services:
     environment:
       - TRAEFIK_USER=/run/secrets/traefik_user
       - TRAEFIK_PASS_HASH=/run/secrets/traefik_pass_hash
+      - CF_DNS_API_TOKEN=/run/secrets/cf_dns_api_token
 
 secrets:
   env_file:
