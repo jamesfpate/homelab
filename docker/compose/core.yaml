@@ -45,7 +45,8 @@ services:
       #- --providers.docker.network=vlan-private #default network, not needed if you add traefik to each service
       # - --providers.docker.swarmMode=false # Traefik v2 Swarm
       # - --providers.swarm.endpoint=tcp://127.0.0.1:2377 # Traefik v3 Swarm
-      - --entrypoints.websecure.http.tls.options=tls-opts@file
+      #- --entrypoints.websecure.http.tls.options=tls-opts@file
+      
       # Add dns-cloudflare as default certresolver for all services. Also enables TLS and no need to specify on individual services
       - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
       - --entrypoints.websecure.http.tls.domains[0].main=$DOMAIN
