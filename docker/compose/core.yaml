@@ -15,7 +15,6 @@ services:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik #traefik config
-      - /mnt/user/appdata/env/.env:/etc/traefik/.env:ro #env file
     command:
       - --global.checkNewVersion=true
       - --global.sendAnonymousUsage=true
@@ -86,8 +85,9 @@ services:
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       - "traefik.http.routers.traefik-rtr.middlewares=auth" # For Basic HTTP Authentication
     restart: unless-stopped
-    env_file:
-      - /etc/traefik/.env
+
+env_file:
+  - /mnt/user/appdata/env/.env
 
 networks:
   vlan-private:    # alias network
