@@ -85,16 +85,8 @@ services:
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       - "traefik.http.routers.traefik-rtr.middlewares=auth" # For Basic HTTP Authentication
     restart: unless-stopped
-    secrets:
-      - env_file
-    environment:
-      - TRAEFIK_USER=/run/secrets/traefik_user
-      - TRAEFIK_PASS_HASH=/run/secrets/traefik_pass_hash
-      - CF_DNS_API_TOKEN=/run/secrets/cf_dns_api_token
-
-secrets:
-  env_file:
-    file: /mnt/user/appdata/env/env.txt
+    env_file:
+      - /mnt/user/appdata/env/.env
 
 networks:
   vlan-private:    # alias network
