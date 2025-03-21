@@ -56,7 +56,7 @@ services:
       #- --providers.file.watch=true # Only works on top level files in the rules folder
       # Commented out staging server - uncomment if testing external setup later
       - --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
-      - --certificatesResolvers.dns-cloudflare.acme.storage=/acme.json
+      - --certificatesResolvers.dns-cloudflare.acme.storage=/etc/traefik/acme.json
       - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.provider=cloudflare
       - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53
       - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.delayBeforeCheck=90 # To delay DNS check and reduce LE hitrate
