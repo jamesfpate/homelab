@@ -1,6 +1,7 @@
 networks:
-  vlan-private:    # This will be created by Docker
-    name: vlan-private
+  vlan-private:    # This is just an alias we use in our compose file
+    external: true
+    name: br0      # This is the actual network name on Unraid
     driver: bridge
     ipam:
       config:
