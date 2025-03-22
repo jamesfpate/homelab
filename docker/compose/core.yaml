@@ -1,5 +1,11 @@
 services:
   traefik:
+    environment:
+      - EMAIL
+      - DOMAIN
+      - TRAEFIK_USER
+      - TRAEFIK_PASS_HASH
+      - CLOUDFLARE_DNS_API_TOKEN
     image: traefik:3
     container_name: traefik
     security_opt:
@@ -47,20 +53,31 @@ services:
       # - --providers.swarm.endpoint=tcp://127.0.0.1:2377 # Traefik v3 Swarm
       #- --entrypoints.websecure.http.tls.options=tls-opts@file
       
-      # Add dns-cloudflare as default certresolver for all services. Also enables TLS and no need to specify on individual services
-      - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
-      - --entrypoints.websecure.http.tls.domains[0].main=$DOMAIN
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.$DOMAIN
+      # Certificate resolver configuration
+      - --certificatesResolvers.letsencrypt.acme.email=${EMAIL}
+      - --certificatesResolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
+      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare
+      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.delayBeforeCheck=90
+      
+      # Default TLS configuration
+      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
       # - --entrypoints.websecure.http.tls.domains[1].main=$DOMAINNAME_2 # Pulls main cert for second domain
       # - --entrypoints.websecure.http.tls.domains[1].sans=*.$DOMAINNAME_2 # Pulls wildcard cert for second domain
       #- --providers.file.directory=/rules # Load dynamic configuration from one or more .toml or .yml files in a directory
       #- --providers.file.watch=true # Only works on top level files in the rules folder
       # Commented out staging server - uncomment if testing external setup later
       #- --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
-      - --certificatesResolvers.dns-cloudflare.acme.storage=/etc/traefik/acme.json
-      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.provider=cloudflare
-      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53
-      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.delayBeforeCheck=90 # To delay DNS check and reduce LE hitrate
+      # Add dns-cloudflare as default certresolver for all services. Also enables TLS and no need to specify on individual services
+      # - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
+      # - --entrypoints.websecure.http.tls.domains[0].main=$DOMAIN
+      # - --entrypoints.websecure.http.tls.domains[0].sans=*.$DOMAIN
+      # - --entrypoints.websecure.http.tls.domains[1].main=$DOMAINNAME_2 # Pulls main cert for second domain
+      # - --entrypoints.websecure.http.tls.domains[1].sans=*.$DOMAINNAME_2 # Pulls wildcard cert for second domain
+      #- --providers.file.directory=/rules # Load dynamic configuration from one or more .toml or .yml files in a directory
+      #- --providers.file.watch=true # Only works on top level files in the rules folder
     labels:
       #old
       #- "traefik.enable=true"
@@ -78,7 +95,7 @@ services:
       - "traefik.enable=true"
       # HTTP Routers
       - "traefik.http.routers.traefik-rtr.entrypoints=websecure"
-      - "traefik.http.routers.traefik-rtr.rule=Host(`traefik.$DOMAIN`)"
+      - "traefik.http.routers.traefik-rtr.rule=Host(`traefik.${DOMAIN}`)"
       # Services - API
       - "traefik.http.routers.traefik-rtr.service=api@internal"
       # Middlewares
