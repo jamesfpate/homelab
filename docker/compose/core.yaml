@@ -1,7 +1,6 @@
 networks:
-  vlan-private:    # This is just an alias we use in our compose file
+  br0:    # This is just an alias we use in our compose file
     external: true
-    name: br0      # This is the actual network name on Unraid
 
 services:
   traefik:
@@ -16,7 +15,7 @@ services:
     security_opt:
       - no-new-privileges:true
     networks:
-      vlan-private:
+      br0:
         ipv4_address: 192.168.1.2
     ports:
       - "8081:80"
