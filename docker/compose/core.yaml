@@ -25,13 +25,16 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - --api.dashboard=true
+      - --global.checkNewVersion=true
+      - --global.sendAnonymousUsage=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --log.level=DEBUG
+      - --api.dashboard=true
       - --api.insecure=true
+      - --api=true
     labels:
       - "traefik.enable=true"
      # Security middlewares
@@ -42,7 +45,7 @@ services:
       - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080"
+      - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080" #needed
     restart: unless-stopped
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
