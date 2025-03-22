@@ -6,13 +6,13 @@ networks:
 
 services:
   traefik:
-    image: traefik:3
+    image: traefik-internal:3
     container_name: traefik
     networks:
       vlan-private:
         ipv4_address: 192.168.1.2
     ports:
-      - "80:80"
+      - "80:80" 
       - "443:443"
       - "8080:8080"
     volumes:
