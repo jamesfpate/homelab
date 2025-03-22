@@ -106,14 +106,8 @@ services:
 
 networks:
   vlan-private:    # alias network
+    external: true
     name: br0
-    driver: macvlan
-    driver_opts:
-      parent: br0
-    ipam:
-      config:
-        - subnet: 192.168.1.0/24
-          gateway: 192.168.1.1
 
   vlan-public:
     name: vlan-public
