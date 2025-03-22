@@ -44,7 +44,7 @@ services:
       - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
       - --entrypoints.websecure.http.tls.domains[0].main=$DOMAIN
       - --entrypoints.websecure.http.tls.domains[0].sans=*.$DOMAIN
-      - --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
+      #- --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
       - --certificatesResolvers.dns-cloudflare.acme.storage=/etc/traefik/acme.json
       - --certificatesResolvers.dns-cloudflare.acme.email=${EMAIL}
       - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.provider=cloudflare
