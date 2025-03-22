@@ -42,7 +42,7 @@ services:
       - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      #- "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080" # also access via ip:8080
+      - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080"
     restart: unless-stopped
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
