@@ -6,8 +6,8 @@ networks:
 
 services:
   traefik:
-    image: traefik-internal:3
-    container_name: traefik
+    image: traefik:3
+    container_name: traefik-internal
     networks:
       vlan-private:
         ipv4_address: 192.168.1.2
