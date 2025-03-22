@@ -18,8 +18,8 @@ services:
       br0:
         ipv4_address: 192.168.1.2
     ports:
-      - "8081:80"
-      - "8443:443"
+      - "80:80"
+      - "443:443"
       - "8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
@@ -28,8 +28,8 @@ services:
     command:
       - --global.checkNewVersion=true
       - --global.sendAnonymousUsage=true
-      - --entrypoints.web.address=:8081
-      - --entrypoints.websecure.address=:8443
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
       - --entrypoints.traefik.address=:8080
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
