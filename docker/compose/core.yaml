@@ -22,6 +22,7 @@ services:
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
       - --log.level=DEBUG
     restart: unless-stopped
 
