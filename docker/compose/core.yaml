@@ -65,9 +65,9 @@ services:
       vlan-private:
         ipv4_address: 192.168.1.2
     ports:
-      - "192.168.1.2:8081:80"
-      - "192.168.1.2:8443:443"
-      - "192.168.1.2:8080:8080"
+      - "8081:80"
+      - "8443:443"
+      - "8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro
