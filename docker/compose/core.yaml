@@ -25,6 +25,9 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --log.level=DEBUG
+      - --api.insecure=true
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
