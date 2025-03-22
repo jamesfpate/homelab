@@ -5,7 +5,7 @@ services:
       - DOMAIN
       - TRAEFIK_USER
       - TRAEFIK_PASS_HASH
-      - CLOUDFLARE_DNS_API_TOKEN
+      - CF_DNS_API_TOKEN
     image: traefik:3
     container_name: traefik
     security_opt:
