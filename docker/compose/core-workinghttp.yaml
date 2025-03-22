@@ -7,11 +7,7 @@ networks:
 services:
   traefik:
     environment:
-      - EMAIL
       - DOMAIN
-      - TRAEFIK_USER
-      - TRAEFIK_PASS_HASH
-      - CLOUDFLARE_DNS_API_TOKEN
     image: traefik:3
     container_name: traefik-internal
     networks:
@@ -34,15 +30,11 @@ services:
       - --api.insecure=true
     labels:
       - "traefik.enable=true"
-     # Security middlewares
-      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
-      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"  # Just this one
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       # Traefik Dashboard
-      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      #- "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080" # also access via ip:8080
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web"
+      - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080"
     restart: unless-stopped
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
