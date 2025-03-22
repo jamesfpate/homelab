@@ -6,6 +6,8 @@ networks:
 
 services:
   traefik:
+    environment:
+      - DOMAIN
     image: traefik:3
     container_name: traefik-internal
     networks:
@@ -26,8 +28,13 @@ services:
       - --providers.docker.exposedbydefault=false
       - --log.level=DEBUG
       - --api.insecure=true
-    restart: unless-stopped
     labels:
       - "traefik.enable=true"
+      # Traefik Dashboard
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
+      - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080"
+    restart: unless-stopped
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
