@@ -33,7 +33,7 @@ services:
       # Traefik Dashboard
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web"
       - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080"
     restart: unless-stopped
 
