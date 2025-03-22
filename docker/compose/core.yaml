@@ -5,16 +5,8 @@ networks:
 
 services:
   traefik:
-    environment:
-      - EMAIL
-      - DOMAIN
-      - TRAEFIK_USER
-      - TRAEFIK_PASS_HASH
-      - CF_DNS_API_TOKEN
     image: traefik:3
     container_name: traefik
-    security_opt:
-      - no-new-privileges:true
     networks:
       br0:
         ipv4_address: 192.168.1.2
@@ -23,52 +15,14 @@ services:
       - "443:443"
       - "8080:8080"
     volumes:
-      - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
     command:
-      - --global.checkNewVersion=true
-      - --global.sendAnonymousUsage=true
+      - --api.dashboard=true
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --entrypoints.traefik.address=:8080
-      - --entrypoints.websecure.http.tls=true
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.web.http.redirections.entrypoint.permanent=true
-      - --api=true
-      - --api.dashboard=true
-      - --log=true
-      - --log.filePath=/etc/traefik/traefik.log
-      - --log.level=DEBUG
-      - --accessLog=true
-      - --accessLog.bufferingSize=100
-      - --accessLog.filters.statusCodes=204-299,400-499,500-599
       - --providers.docker=true
-      - --providers.docker.endpoint=unix:///var/run/docker.sock
-      - --providers.docker.exposedByDefault=false
-      
-      # Certificate resolver configuration
-      - --certificatesResolvers.letsencrypt.acme.email=${EMAIL}
-      - --certificatesResolvers.letsencrypt.acme.storage=/etc/traefik/acme.json
-      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare
-      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53
-      - --certificatesResolvers.letsencrypt.acme.dnsChallenge.delayBeforeCheck=90
-      
-      # Default TLS configuration
-      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
-      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAIN}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAIN}
-    labels:
-      - "traefik.enable=true"
-      # HTTP Routers
-      - "traefik.http.routers.traefik-rtr.entrypoints=websecure"
-      - "traefik.http.routers.traefik-rtr.rule=Host(`traefik.${DOMAIN}`)"
-      # Services - API
-      - "traefik.http.routers.traefik-rtr.service=api@internal"
-      # Middlewares
-      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
-      - "traefik.http.routers.traefik-rtr.middlewares=auth"
+      - --log.level=DEBUG
     restart: unless-stopped
 
 #https://www.simplehomelab.com/traefik-v3-docker-compose-guide-2024/
