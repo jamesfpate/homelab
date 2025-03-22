@@ -18,9 +18,9 @@ services:
       br0:
         ipv4_address: 192.168.1.2
     ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
+      - "192.168.1.2:80:80"
+      - "192.168.1.2:443:443"
+      - "192.168.1.2:8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro #timezone
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -54,7 +54,7 @@ services:
       - --providers.docker.exposedByDefault=false
       #- --providers.docker.network=vlan-private #default network, not needed if you add traefik to each service
       # - --providers.docker.swarmMode=false # Traefik v2 Swarm
-      # - --providers.swarm.endpoint=tcp://127.0.0.1:2377 # Traefik v3 Swarm
+      # - --providers.swarm.endpoint=tcp://127.0.0.1:2377 # Trfaefik v3 Swarm
       #- --entrypoints.websecure.http.tls.options=tls-opts@file
       
       # Certificate resolver configuration
