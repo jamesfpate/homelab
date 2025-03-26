@@ -1,0 +1,105 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+
+services:
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.11
+    ports:
+      - "80:80"
+    environment:
+      - TZ=${TZ}
+      - PGADMIN_DEFAULT_EMAIL=${EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PG_PASS}
+    #volumes:
+      - /mnt/user/appdata/pgadmin:/var/lib/pgadmin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.db.rule=Host(`db.${DOMAIN}`)"
+      - "traefik.http.routers.db.entrypoints=websecure"
+      - "traefik.http.routers.db.tls=true"
+      - "traefik.http.routers.db.tls.certresolver=dns-cloudflare"
+      - "traefik.http.services.db.loadbalancer.server.port=80"
+      #- "traefik.http.routers.db.middlewares=ipwhitelist"
+      - "traefik.http.services.db.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.db.loadbalancer.server.scheme=http"
+
+  dyndns:
+    image: qmcgaw/ddns-updater
+    container_name: dyndns
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - PERIOD=5m
+      - DOMAIN=${DOMAIN}
+      - SHOUTRRR_ADDRESS=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.4
+    ports:
+      - "8000:8000"  # DDNS dashboard
+    volumes:
+      - /mnt/user/appdata/dyndns:/updater/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dyndns.rule=Host(`dyndns.${DOMAIN}`)"
+      - "traefik.http.routers.dyndns.entrypoints=websecure"
+      - "traefik.http.routers.dyndns.tls=true"
+      - "traefik.http.routers.dyndns.tls.certresolver=dns-cloudflare"
+      - "traefik.http.services.dyndns.loadbalancer.server.port=8000"
+      #- "traefik.http.routers.dyndns.middlewares=ipwhitelist"
+      - "traefik.http.services.dyndns.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.dyndns.loadbalancer.server.scheme=http"
+    
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    networks:
+      - vlan-private
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TZ}
+      - WATCHTOWER_NOTIFICATION_URL=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
+      #- WATCHTOWER_NOTIFICATION_URL=smtp://${EMAIL_FROM}:${EMAIL_APP_PASSWORD}@smtp.gmail.com:587/?from=${EMAIL_FROM}&to=${EMAIL}
+      - WATCHTOWER_SCHEDULE=0 0 22 * * 2    # Every Tuesday at 10 PM (seconds minutes hours day month weekday)
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false    # Skip stopped containers
+      - WATCHTOWER_ROLLING_RESTART=true     # Update one at a time
+      #- WATCHTOWER_LABEL_ENABLE=true # only update containers with the label com.centurylinklabs.watchtower.enable
+    labels:
+      - "traefik.enable=false"
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.13
+    ports:
+      - "5432:5432"  # For debugging/backup purposes
+    volumes:
+      - /mnt/user/appdata/postgres/data:/var/lib/postgresql/data
+      - /mnt/user/appdata/postgres/backups:/backups
+      - /mnt/user/appdata/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    environment:
+      - TZ=${TZ}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "traefik.enable=false"  # Database doesn't need HTTP access
+    restart: unless-stopped

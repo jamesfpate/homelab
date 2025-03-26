@@ -1,0 +1,146 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+
+  vlan-iot:
+    name: vlan-iot
+    driver: macvlan
+    driver_opts:
+      parent: br0.40
+    ipam:
+      config:
+        - subnet: 192.168.40.0/24
+          gateway: 192.168.40.1
+
+  vlan-downloads:
+    name: vlan-downloads
+    driver: macvlan
+    driver_opts:
+      parent: br0.60
+    ipam:
+      config:
+        - subnet: 192.168.60.0/24
+          gateway: 192.168.60.1
+
+  vlan-cameras:
+    name: vlan-cameras
+    driver: macvlan
+    driver_opts:
+      parent: br0.70
+    ipam:
+      config:
+        - subnet: 192.168.70.0/24
+          gateway: 192.168.70.1
+  
+  #vlan-public:
+  #  name: vlan-public
+  #  driver: macvlan
+  #  driver_opts:
+  #    parent: br0.20
+  #  ipam:
+  #    config:
+  #      - subnet: 192.168.20.0/24
+  #        gateway: 192.168.20.1
+
+services:
+  traefik-internal:
+    environment:
+      - TZ=America/New_York
+    image: traefik:3
+    container_name: traefik-internal
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.2
+      vlan-iot:
+      vlan-downloads:
+      vlan-cameras:
+    ports:
+      - "80:80" 
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/user/appdata/traefik:/etc/traefik
+    command:
+      - --global.checkNewVersion=true
+      - --global.sendAnonymousUsage=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      #redirect http to https
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --log.level=DEBUG
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --api=true
+      - --ping
+      #cloudflare dns 
+      - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
+      - --entrypoints.websecure.http.tls.domains[0].main=$DOMAIN
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.$DOMAIN
+      #- --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
+      - --certificatesResolvers.dns-cloudflare.acme.storage=/etc/traefik/acme.json
+      - --certificatesResolvers.dns-cloudflare.acme.email=${EMAIL}
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.provider=cloudflare
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.delayBeforeCheck=90 # To delay DNS check and reduce LE hitrate
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+     # Security middlewares
+      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
+      # Traefik Dashboard
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080" #needed
+      - "traefik.http.routers.traefik-dashboard.middlewares=ipwhitelist"
+    restart: unless-stopped
+  
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    depends_on:
+      traefik:
+        condition: service_healthy
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.12
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/user/appdata/portainer:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=America/New_York
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN}`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls=true"
+      - "traefik.http.routers.portainer.tls.certresolver=dns-cloudflare"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - "traefik.http.routers.portainer.middlewares=ipwhitelist"
+      - "traefik.http.services.portainer.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.portainer.loadbalancer.server.scheme=http"
