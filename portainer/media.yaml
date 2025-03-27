@@ -87,7 +87,7 @@ services:
     volumes:
       - /mnt/user/appdata/sonarr:/config
       - /mnt/user/plexmedia/tv:/tv
-      - /mnt/user/downloads/complete:/downloads
+      - /mnt/user/downloads/usenet/complete:/downloads/usenet
     environment:
       - TZ=${TZ}
       - PUID=${PUID}
@@ -116,7 +116,7 @@ services:
     volumes:
       - /mnt/user/appdata/radarr:/config
       - /mnt/user/plexmedia/movies:/movies
-      - /mnt/user/downloads/complete:/downloads
+      - /mnt/user/downloads/usenet/complete:/downloads/usenet
     environment:
       - TZ=${TZ}
       - PUID=${PUID}
@@ -203,7 +203,7 @@ services:
     volumes:
       - /mnt/user/appdata/sabnzbd:/config
       - /mnt/user/downloads/usenet/incomplete:/incomplete-downloads
-      - /mnt/user/downloads/usenet/complete:/downloads
+      - /mnt/user/downloads/usenet/complete:/downloads/usenet
     environment:
       - TZ=${TZ}
       - PUID=${PUID}
