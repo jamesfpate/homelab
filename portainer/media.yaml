@@ -37,6 +37,7 @@ services:
       - TZ=${TZ}
       - VERSION=docker
       - DOMAIN=${DOMAIN}
+      - PLEX_CLAIM=${PLEX_CLAIM}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.plex.rule=Host(`plex.${DOMAIN}`)"
