@@ -14,6 +14,7 @@ services:
     networks:
       vlan-private:
         ipv4_address: 192.168.1.10
+      vlan-downloads:
     ports:
       - "1900:1900/udp"    # DLNA discovery
       - "3005:3005"        # Plex Companion (Mobile apps)
