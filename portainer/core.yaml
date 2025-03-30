@@ -113,6 +113,6 @@ services:
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-      - TUNNEL_INGRESS_RULES='{"hostname":"portainer.jamespate.net","path":"/api/webhooks/*","service":"https://192.168.1.2:443"}, {"service":"http_status:404"}'
+      - TUNNEL_INGRESS_RULES='{"hostname":"portainer.jamespate.net","path":"/api/stacks/webhooks/*","service":"https://192.168.1.2:443"}, {"service":"http_status:404"}'
     labels:
       - "traefik.enable=false"
