@@ -115,3 +115,19 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     labels:
       - "traefik.enable=false"
+
+  unraid-proxy:
+    image: alpine:latest
+    container_name: unraid-proxy
+    network_mode: "host"
+    command: sleep infinity
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.unraid.rule=Host(`unraid.${DOMAIN}`)"
+      - "traefik.http.routers.unraid.entrypoints=websecure"
+      - "traefik.http.routers.unraid.tls=true"
+      - "traefik.http.routers.unraid.tls.certresolver=dns-cloudflare"
+      - "traefik.http.services.unraid.loadbalancer.server.port=80"
+      - "traefik.http.services.unraid.loadbalancer.server.url=http://192.168.1.42:80"
+      - "traefik.http.services.unraid.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.unraid.loadbalancer.server.scheme=http"
