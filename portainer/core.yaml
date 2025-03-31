@@ -64,14 +64,16 @@ services:
     container_name: watchtower
     restart: unless-stopped
     networks:
-      - vlan-private
+      vlan-private:
+        ipv4_address: 192.168.1.5
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - TZ=${TZ}
       - WATCHTOWER_NOTIFICATION_URL=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
       #- WATCHTOWER_NOTIFICATION_URL=smtp://${EMAIL_FROM}:${EMAIL_APP_PASSWORD}@smtp.gmail.com:587/?from=${EMAIL_FROM}&to=${EMAIL}
-      - WATCHTOWER_SCHEDULE=0 0 3 * * 0    # Every Tuesday at 10 PM (seconds minutes hours day month weekday)
+      - WATCHTOWER_SCHEDULE=0 0 3 * * 0    # sun at 3am (seconds minutes hours day month weekday)
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_STOPPED=false    # Skip stopped containers
       - WATCHTOWER_ROLLING_RESTART=true     # Update one at a time 
@@ -119,7 +121,9 @@ services:
   unraid-proxy:
     image: alpine:latest
     container_name: unraid-proxy
-    network_mode: "host"
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.6
     command: sleep infinity
     labels:
       - "traefik.enable=true"
@@ -128,6 +132,6 @@ services:
       - "traefik.http.routers.unraid.tls=true"
       - "traefik.http.routers.unraid.tls.certresolver=dns-cloudflare"
       - "traefik.http.services.unraid.loadbalancer.server.port=80"
-      - "traefik.http.services.unraid.loadbalancer.server.url=http://192.168.1.42:80"
+      - "traefik.http.services.unraid.loadbalancer.server.url=http://192.168.1.42"
       - "traefik.http.services.unraid.loadbalancer.passHostHeader=true"
       - "traefik.http.services.unraid.loadbalancer.server.scheme=http"

@@ -1,4 +1,0 @@
-  - WATCHTOWER_NOTIFICATION_URL=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
-  #- WATCHTOWER_NOTIFICATION_URL=smtp://${EMAIL_FROM}:${EMAIL_APP_PASSWORD}@smtp.gmail.com:587/?from=${EMAIL_FROM}&to=${EMAIL}
-  - WATCHTOWER_SCHEDULE=0 0 3 * * 0    # Every Sunday at 3 AM (seconds minutes hours day month weekday)
-  - WATCHTOWER_CLEANUP=true 
