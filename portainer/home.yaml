@@ -75,13 +75,17 @@ services:
       - FRIGATE_FFMPEG_OUTPUT_ARGS="-vf scale_vaapi=format=nv12"
       - FRIGATE_FFMPEG_HWACCEL_ARGS=vaapi
       # Storage Settings
-      - FRIGATE_RECORD_ENABLED=True
-      - FRIGATE_RECORD_RETAIN_DAYS=30
-      # Example Camera (uncomment when ready)
-      # - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_PATH=rtsp://${CAM1_IP}:554/stream
-      # - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_ROLES_0=detect
-      # - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_ROLES_1=record
-      # - FRIGATE_CAMERAS_CAM1_FFMPEG_HWACCEL_ARGS=vaapi
+      - FRIGATE_RECORD_ENABLED=False
+      - FRIGATE_DETECT_ENABLED=False
+      # Camera Configuration
+      # |
+      #   Example camera configuration (uncomment when ready):
+      #   - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_PATH=rtsp://admin:password@192.168.70.10:554/stream1
+      #   - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_ROLES_0=detect
+      #   - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_ROLES_1=record
+      #   - FRIGATE_CAMERAS_CAM1_FFMPEG_HWACCEL_ARGS=vaapi
+      #   - FRIGATE_CAMERAS_CAM1_DETECT_ENABLED=true
+      #   - FRIGATE_CAMERAS_CAM1_RECORD_ENABLED=true
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frigate.rule=Host(`cameras.${DOMAIN}`)"
