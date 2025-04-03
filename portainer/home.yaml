@@ -28,7 +28,7 @@ services:
       - INIT_USERNAME=${HA_USER}
       - INIT_PASSWORD=${HA_PASS}
       - HTTP_USE_X_FORWARDED_FOR=true
-      - HTTP_TRUSTED_PROXIES=192.168.1.0/24,192.168.40.0/24
+      - HTTP_TRUSTED_PROXIES=192.168.1.2
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.rule=Host(`ha.${DOMAIN}`)"
