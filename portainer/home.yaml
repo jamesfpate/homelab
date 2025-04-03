@@ -22,16 +22,11 @@ services:
     volumes:
       - /mnt/user/appdata/homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-      - /dev/ttyACM0:/dev/ttyACM0 # Zooz 800 Z-Wave
+      #- /dev/ttyACM0:/dev/ttyACM0 # Zooz 800 Z-Wave
     environment:
       - TZ=${TZ}
       - INIT_USERNAME=${HA_USER}
       - INIT_PASSWORD=${HA_PASS}
-      - POSTGRES_HOST=192.168.1.10
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=homeassistant
-      - POSTGRES_USER=${HA_USER}
-      - POSTGRES_PASSWORD=${HA_PASS}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.homeassistant.rule=Host(`ha.${DOMAIN}`)"
