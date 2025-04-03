@@ -40,3 +40,55 @@ services:
       - "traefik.http.services.homeassistant.loadbalancer.passHostHeader=true"
       - "traefik.http.services.homeassistant.loadbalancer.server.scheme=http"
     restart: unless-stopped
+
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: frigate
+    privileged: true  # Required for GPU access
+    restart: unless-stopped
+    networks:
+      vlan-cameras:
+        ipv4_address: 192.168.70.70
+    devices:
+      - /dev/dri:/dev/dri  # Intel iGPU access
+    volumes:
+      - /mnt/user/appdata/frigate:/config          # Frigate config and DB
+      - /mnt/user/cameras/frigate:/media/frigate   # Separate volume for recordings
+      - /dev/shm:/dev/shm                          # RAM buffer
+      - /etc/localtime:/etc/localtime:ro           # System time sync
+      - type: tmpfs                                # Cache in RAM
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000  # 1GB
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      # Authentication uncomment to require login
+      #- FRIGATE_UI_USER=${FRIGATE_USER}
+      #- FRIGATE_UI_PASSWORD=${FRIGATE_PASS}
+      # Hardware Acceleration (Intel Arc Graphics)
+      - FRIGATE_HWACCEL_ARGS=vaapi
+      - FRIGATE_DETECTORS_CPU_TYPE=cpu        # Start with CPU, test GPU later
+      # Performance Settings
+      - FRIGATE_FFMPEG_GLOBAL_ARGS="-hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi"
+      - FRIGATE_FFMPEG_OUTPUT_ARGS="-vf scale_vaapi=format=nv12"
+      - FRIGATE_FFMPEG_HWACCEL_ARGS=vaapi
+      # Storage Settings
+      - FRIGATE_RECORD_ENABLED=True
+      - FRIGATE_RECORD_RETAIN_DAYS=30
+      # Example Camera (uncomment when ready)
+      # - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_PATH=rtsp://${CAM1_IP}:554/stream
+      # - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_ROLES_0=detect
+      # - FRIGATE_CAMERAS_CAM1_FFMPEG_INPUTS_0_ROLES_1=record
+      # - FRIGATE_CAMERAS_CAM1_FFMPEG_HWACCEL_ARGS=vaapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frigate.rule=Host(`cameras.${DOMAIN}`)"
+      - "traefik.http.routers.frigate.entrypoints=websecure"
+      - "traefik.http.routers.frigate.tls=true"
+      - "traefik.http.routers.frigate.tls.certresolver=dns-cloudflare"
+      - "traefik.http.services.frigate.loadbalancer.server.port=8123"
+      #- "traefik.http.routers.frigate.middlewares=ipwhitelist"
+      - "traefik.http.services.frigate.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.frigate.loadbalancer.server.scheme=http"
