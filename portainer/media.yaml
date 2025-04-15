@@ -90,6 +90,7 @@ services:
     volumes:
       - /mnt/user/appdata/sonarr:/config
       - /mnt/user/plexmedia/tv:/tv
+      - /mnt/user/plexmedia/anime:/anime
       - /mnt/user/downloads/usenet:/downloads/usenet
     environment:
       - TZ=${TZ}
