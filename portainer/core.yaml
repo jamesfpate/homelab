@@ -2,6 +2,8 @@ networks:
   vlan-private:
     external: true
     name: br0
+  vlan-downloads:
+    external: true
 
 services:
   pgadmin:
@@ -112,6 +114,8 @@ services:
     networks:
       vlan-private:
         ipv4_address: 192.168.1.3
+      vlan-downloads:
+        ipv4_address: 192.168.60.3
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
