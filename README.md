@@ -11,10 +11,10 @@ Setup for unraid homelab
 
 ## Services
 192.168.1.2 - Traefik - traefik.domain.com  
-192.168.1.3 - Cloudflare Tunnel    
+192.168.1.3 - Cloudflare Tunnel  
 192.168.1.4 - Dyndns - dyndns.domain.com  
-192.168.1.5 - watchtower
-192.168.1.6 - unraid proxy - urnaid.domain.com
+192.168.1.5 - watchtower  
+192.168.1.6 - unraid proxy - urnaid.domain.com  
 192.168.1.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.12 - Portainer - portainer.domain.com  
