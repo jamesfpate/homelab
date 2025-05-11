@@ -33,6 +33,7 @@ services:
       - /mnt/user/appdata/plex:/config
       - /mnt/user/plexmedia/movies:/movies
       - /mnt/user/plexmedia/tv:/tv
+      - /mnt/user/plexmedia/anime:/anime
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
