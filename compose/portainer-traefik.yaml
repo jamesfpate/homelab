@@ -47,6 +47,8 @@ services:
   traefik-internal:
     environment:
       - TZ=America/New_York
+      - CF_API_EMAIL=${EMAIL}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     image: traefik:3
     container_name: traefik-internal
     networks:
