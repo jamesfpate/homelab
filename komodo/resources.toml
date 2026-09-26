@@ -1,0 +1,95 @@
+## Komodo Resource Sync
+## Create a Resource Sync in the Komodo UI named "homelab", pointing at this repo
+## with resource path `komodo/resources.toml`. The "Deploy on push" procedure below
+## re-runs it on a schedule, so edits to this file apply themselves.
+## Schema: https://komo.do/docs/automate/sync-resources
+##
+## Updates are hands-off:
+## - Compose file changes pushed to main deploy within ~5 min ("Deploy on push").
+## - New images for each stack's tags are pulled + redeployed daily at 03:00 by the
+##   built-in "Global Auto Update" procedure (auto_update = true below).
+## Version pinning lives in the compose files' image tags (e.g. postgres:17), not here.
+##
+## project_name must match the compose project name each stack is currently running
+## under so Komodo adopts the running containers instead of colliding with them.
+
+[[stack]]
+name = "proxy"
+tags = ["homelab"]
+[stack.config]
+server = "Local"
+project_name = "proxy"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/proxy.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
+[[stack]]
+name = "core"
+tags = ["homelab"]
+[stack.config]
+server = "Local"
+project_name = "core"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/core.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
+[[stack]]
+name = "home"
+tags = ["homelab"]
+[stack.config]
+server = "Local"
+project_name = "home"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/home.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
+[[stack]]
+name = "media"
+tags = ["homelab"]
+[stack.config]
+server = "Local"
+project_name = "media"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/media.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
+[[stack]]
+name = "public"
+tags = ["homelab"]
+[stack.config]
+server = "Local"
+project_name = "public"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/public.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
+[[procedure]]
+name = "Deploy on push"
+description = "Apply this sync, then redeploy any stack whose compose files changed on main."
+tags = ["homelab"]
+[procedure.config]
+schedule_format = "Cron"
+schedule = "0 */5 * * * *" # sec min hour day month weekday: every 5 minutes
+failure_alert = true
+
+[[procedure.config.stage]]
+name = "Sync resources"
+executions = [
+  { execution.type = "RunSync", execution.params.sync = "homelab" },
+]
+
+[[procedure.config.stage]]
+name = "Deploy changed stacks"
+executions = [
+  { execution.type = "BatchDeployStackIfChanged", execution.params.pattern = "*" },
+]

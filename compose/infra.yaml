@@ -1,0 +1,89 @@
+# Bootstrap stack deployed by Unraid Compose Manager: just Komodo, which then
+# deploys everything in /stacks. Komodo can't safely redeploy itself, so this is
+# the only stack updated by hand (Compose Manager -> Update Stack).
+#
+# The macvlan networks are created once on the host by scripts/create-networks.sh
+# and referenced as external everywhere.
+networks:
+  vlan-private:
+    external: true
+    name: br0
+
+services:
+  ################################
+  # 🦎 KOMODO (v2) - MONGO 🦎   #
+  ################################
+  # Replaces Portainer. Stacks in /stacks are declared in /komodo/resources.toml
+  # and deployed from this repo via a Komodo Resource Sync.
+  #
+  # NOTE: Unraid's /etc lives in RAM and is wiped on reboot, so everything Komodo
+  # needs to persist (keys, backups, periphery root) is kept under appdata instead
+  # of the upstream /etc/komodo default.
+  mongo:
+    image: mongo:8 # pinned major: mongo data must be upgraded one major at a time
+    container_name: komodo-mongo
+    labels:
+      komodo.skip: # Prevent Komodo from stopping with StopAllContainers
+    command: --quiet --wiredTigerCacheSizeGB 0.25
+    restart: unless-stopped
+    volumes:
+      - /mnt/user/appdata/mongo/data:/data/db
+      - /mnt/user/appdata/mongo/config:/data/configdb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${KOMODO_DB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${KOMODO_DB_PASSWORD}
+
+  core:
+    image: ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_IMAGE_TAG:-2}
+    container_name: komodo-core
+    init: true
+    labels:
+      - "komodo.skip=" # Prevent Komodo from stopping with StopAllContainers
+      - "traefik.enable=true"
+      - "traefik.docker.network=br0"
+      - "traefik.http.routers.komodo.rule=Host(`komodo.${DOMAIN}`)"
+      - "traefik.http.routers.komodo.entrypoints=websecure"
+      - "traefik.http.routers.komodo.tls=true"
+      - "traefik.http.routers.komodo.tls.certresolver=dns-cloudflare"
+      - "traefik.http.routers.komodo.middlewares=ipwhitelist"
+      - "traefik.http.services.komodo.loadbalancer.server.port=9120"
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    networks:
+      default: # reach mongo / accept periphery connection
+      vlan-private:
+        ipv4_address: 192.168.1.14
+    env_file: /mnt/user/appdata/komodo/compose.env
+    environment:
+      TZ: ${TZ:-America/New_York}
+      KOMODO_DATABASE_ADDRESS: mongo:27017
+      KOMODO_DATABASE_USERNAME: ${KOMODO_DB_USERNAME}
+      KOMODO_DATABASE_PASSWORD: ${KOMODO_DB_PASSWORD}
+    volumes:
+      ## Core / Periphery communication keys
+      - /mnt/user/appdata/komodo/keys:/config/keys
+      ## Dated database backups - https://komo.do/docs/setup/backup
+      - /mnt/user/appdata/komodo/backups:/backups
+
+  periphery:
+    image: ghcr.io/moghtech/komodo-periphery:${COMPOSE_KOMODO_IMAGE_TAG:-2}
+    container_name: komodo-periphery
+    init: true
+    labels:
+      komodo.skip:
+    restart: unless-stopped
+    depends_on:
+      - core
+    env_file: /mnt/user/appdata/komodo/compose.env
+    environment:
+      TZ: ${TZ:-America/New_York}
+      PERIPHERY_ROOT_DIRECTORY: /mnt/user/appdata/komodo/periphery
+    volumes:
+      - /mnt/user/appdata/komodo/keys:/config/keys
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc:/proc
+      ## Root directory must be the same path inside and outside the container.
+      - /mnt/user/appdata/komodo/periphery:/mnt/user/appdata/komodo/periphery
+      ## Shared env file used by every stack (see additional_env_files in komodo/resources.toml)
+      - /mnt/user/appdata/env:/mnt/user/appdata/env:ro
