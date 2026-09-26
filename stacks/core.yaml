@@ -42,6 +42,9 @@ services:
       - PGID=${PGID}
       - PERIOD=5m
       - DOMAIN=${DOMAIN}
+      # Whole config as one JSON line (takes precedence over /updater/data/config.json).
+      # wg.<domain> is the UDM WireGuard endpoint: DNS only (proxied=false), IPv4 only.
+      - 'CONFIG={"settings":[{"provider":"cloudflare","zone_identifier":"${CF_ZONE_ID}","domain":"wg.${DOMAIN}","ttl":1,"token":"${CF_DNS_API_TOKEN}","proxied":false,"ip_version":"ipv4"}]}'
       - SHOUTRRR_ADDRESSES=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
     networks:
       vlan-private:
