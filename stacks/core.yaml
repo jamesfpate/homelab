@@ -2,8 +2,6 @@ networks:
   vlan-private:
     external: true
     name: br0
-  vlan-public:
-    external: true
   vlan-downloads:
     external: true
 
@@ -27,10 +25,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.db.rule=Host(`db.${DOMAIN}`)"
       - "traefik.http.routers.db.entrypoints=websecure"
-      - "traefik.http.routers.db.tls=true"
-      - "traefik.http.routers.db.tls.certresolver=dns-cloudflare"
       - "traefik.http.services.db.loadbalancer.server.port=80"
-      #- "traefik.http.routers.db.middlewares=ipwhitelist"
+      #- "traefik.http.routers.db.middlewares=ipallowlist"
       - "traefik.http.services.db.loadbalancer.passHostHeader=true"
       - "traefik.http.services.db.loadbalancer.server.scheme=http"
 
@@ -56,10 +52,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.dyndns.rule=Host(`dyndns.${DOMAIN}`)"
       - "traefik.http.routers.dyndns.entrypoints=websecure"
-      - "traefik.http.routers.dyndns.tls=true"
-      - "traefik.http.routers.dyndns.tls.certresolver=dns-cloudflare"
       - "traefik.http.services.dyndns.loadbalancer.server.port=8000"
-      #- "traefik.http.routers.dyndns.middlewares=ipwhitelist"
+      #- "traefik.http.routers.dyndns.middlewares=ipallowlist"
       - "traefik.http.services.dyndns.loadbalancer.passHostHeader=true"
       - "traefik.http.services.dyndns.loadbalancer.server.scheme=http"
     
@@ -91,13 +85,12 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
+    restart: unless-stopped
+    # Internet-facing: only on the downloads VLAN, next to the one public app (Overseerr).
+    # Tunnel public hostname should point directly at http://192.168.60.65:5055, not Traefik.
     networks:
-      vlan-private:
-        ipv4_address: 192.168.1.3
       vlan-downloads:
         ipv4_address: 192.168.60.3
-      vlan-public:
-        ipv4_address: 192.168.20.3
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
@@ -115,8 +108,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.unraid.rule=Host(`unraid.${DOMAIN}`)"
       - "traefik.http.routers.unraid.entrypoints=websecure"
-      - "traefik.http.routers.unraid.tls=true"
-      - "traefik.http.routers.unraid.tls.certresolver=dns-cloudflare"
       - "traefik.http.services.unraid.loadbalancer.server.port=80"
       - "traefik.http.services.unraid.loadbalancer.server.url=http://192.168.1.42"
       - "traefik.http.services.unraid.loadbalancer.passHostHeader=true"

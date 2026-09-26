@@ -6,8 +6,6 @@ networks:
     external: true
   vlan-downloads:
     external: true
-  vlan-cameras:
-    external: true
 
 services:
   traefik-internal:
@@ -22,11 +20,9 @@ services:
         ipv4_address: 192.168.1.2
       vlan-iot:
       vlan-downloads:
-      vlan-cameras:
     ports:
       - "80:80" 
       - "443:443"
-      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /mnt/user/appdata/traefik:/etc/traefik
@@ -42,9 +38,8 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.permanent=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --log.level=DEBUG
+      - --log.level=INFO
       - --api.dashboard=true
-      - --api.insecure=true
       - --api=true
       - --ping
       #cloudflare dns 
@@ -66,13 +61,13 @@ services:
     labels:
       - "traefik.enable=true"
      # Security middlewares
-      - "traefik.http.middlewares.ipwhitelist.ipwhitelist.sourcerange=192.168.1.0/24"
+      - "traefik.http.middlewares.ipallowlist.ipallowlist.sourcerange=192.168.1.0/24"
       - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=false"
       - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASS_HASH}"
       # Traefik Dashboard
-      - "traefik.http.routers.traefik-dashboard.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.services.traefik-dashboard-service.loadbalancer.server.port=8080" #needed
-      - "traefik.http.routers.traefik-dashboard.middlewares=ipwhitelist"
+      - "traefik.http.routers.traefik-dashboard.middlewares=ipallowlist"
     restart: unless-stopped

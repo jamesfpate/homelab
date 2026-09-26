@@ -61,18 +61,6 @@ file_paths = ["stacks/media.yaml"]
 additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
 auto_update = true
 
-[[stack]]
-name = "public"
-tags = ["homelab"]
-[stack.config]
-server = "Local"
-project_name = "public"
-repo = "jamesfpate/homelab"
-branch = "main"
-file_paths = ["stacks/public.yaml"]
-additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
-auto_update = true
-
 [[procedure]]
 name = "Deploy on push"
 description = "Apply this sync, then redeploy any stack whose compose files changed on main."

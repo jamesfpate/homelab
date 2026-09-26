@@ -43,9 +43,7 @@ services:
       - "traefik.docker.network=br0"
       - "traefik.http.routers.komodo.rule=Host(`komodo.${DOMAIN}`)"
       - "traefik.http.routers.komodo.entrypoints=websecure"
-      - "traefik.http.routers.komodo.tls=true"
-      - "traefik.http.routers.komodo.tls.certresolver=dns-cloudflare"
-      - "traefik.http.routers.komodo.middlewares=ipwhitelist"
+      - "traefik.http.routers.komodo.middlewares=ipallowlist"
       - "traefik.http.services.komodo.loadbalancer.server.port=9120"
     restart: unless-stopped
     depends_on:

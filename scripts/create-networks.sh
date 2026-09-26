@@ -14,7 +14,5 @@ create() {
   fi
 }
 
-create vlan-public    br0.20 192.168.20.0/24 192.168.20.1
 create vlan-iot       br0.40 192.168.40.0/24 192.168.40.1
 create vlan-downloads br0.60 192.168.60.0/24 192.168.60.1
-create vlan-cameras   br0.70 192.168.70.0/24 192.168.70.1

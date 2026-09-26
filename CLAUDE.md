@@ -14,9 +14,8 @@ This is a homelab infrastructure-as-code repository for managing Docker-based se
 # Stack files are in /stacks/ directory, declared in komodo/resources.toml:
 # - proxy.yaml - Traefik reverse proxy
 # - core.yaml - Core infrastructure (databases, DNS, monitoring)
-# - home.yaml - Home automation (Home Assistant, Frigate)
+# - home.yaml - Home automation (Home Assistant)
 # - media.yaml - Media services (Plex, *arr stack)
-# - public.yaml - Public services (n8n)
 
 # View service logs (on Unraid host)
 docker logs [container_name]
@@ -42,7 +41,7 @@ The homelab uses VLAN segmentation with macvlan networks:
 - **192.168.20.x** - Public services VLAN (br0.20)
 - **192.168.40.x** - IoT devices VLAN (br0.40)
 - **192.168.60.x** - Downloads/media VLAN (br0.60)
-- **192.168.70.x** - Security cameras VLAN (br0.70)
+- **192.168.70.x** - Security cameras VLAN (br0.70; UniFi Protect cameras, no Docker network)
 
 ### Service Architecture
 1. **Infrastructure Layer** (`compose/infra.yaml`, deployed by Unraid Compose Manager)
@@ -58,7 +57,7 @@ The homelab uses VLAN segmentation with macvlan networks:
 - **Service Discovery**: All HTTP services exposed via `service.local.example.com` subdomains
 - **SSL/Security**: Traefik handles all SSL certificates and IP whitelisting
 - **Data Persistence**: Application data in `/mnt/user/appdata/[service]/`
-- **Hardware Access**: Intel GPU passed through for Plex/Frigate transcoding
+- **Hardware Access**: Intel iGPU passed through for Plex transcoding; camera person detection is done by UniFi Protect on the Dream Machine Pro, surfaced in Home Assistant via the UniFi Protect integration
 - **Updates**: Komodo auto-deploys compose changes pushed to main (~5 min) and auto-updates images daily at 03:00; pin versions via image tags (databases stay on a fixed major)
 
 ### Important Considerations

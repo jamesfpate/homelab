@@ -19,7 +19,7 @@ Setup for unraid homelab
 
 ## Services
 192.168.1.2 - Traefik - traefik.domain.com  
-192.168.1.3 - Cloudflare Tunnel  
+192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Overseerr)  
 192.168.1.4 - Dyndns - dyndns.domain.com  
 192.168.1.6 - unraid proxy - urnaid.domain.com  
 192.168.1.10 - Plex - plex.domain.com  
@@ -27,7 +27,6 @@ Setup for unraid homelab
 192.168.1.13 - postgres  
 192.168.1.14 - Komodo - komodo.domain.com  
 192.168.40.40 - Home Assistant - ha.domain.com  
-192.168.70.70 - Frigate - frigate.domain.com  
 192.168.60.60 - qBittorrent - downloads.domain.com  
 192.168.60.61 - Prowlarr - prowlarr.domain.com  
 192.168.60.62 - Sonarr - tv.domain.com  
