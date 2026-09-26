@@ -16,6 +16,7 @@ This is a homelab infrastructure-as-code repository for managing Docker-based se
 # - core.yaml - Core infrastructure (databases, DNS, monitoring)
 # - home.yaml - Home automation (Home Assistant)
 # - media.yaml - Media services (Plex, *arr stack)
+# - ash.yaml - Personal SvelteKit site (private ghcr.io image, internal only)
 
 # View service logs (on Unraid host)
 docker logs [container_name]

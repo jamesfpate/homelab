@@ -62,6 +62,20 @@ file_paths = ["stacks/media.yaml"]
 additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
 auto_update = true
 
+[[stack]]
+name = "ash"
+tags = ["homelab"]
+[stack.config]
+server = "Unraid"
+project_name = "ash"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/ash.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+registry_provider = "ghcr.io" # private image: uses the ghcr.io registry account in Komodo
+registry_account = "jamesfpate"
+auto_update = true
+
 [[procedure]]
 name = "Deploy on push"
 description = "Apply this sync, then redeploy any stack whose compose files changed on main."

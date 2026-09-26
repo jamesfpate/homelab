@@ -1,0 +1,29 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+
+services:
+  # Personal SvelteKit site, internal only (no Cloudflare tunnel route).
+  # Source + image build live in the private jamesfpate/ash repo; Komodo pulls
+  # ghcr.io/jamesfpate/ash with the ghcr.io registry account (see komodo/resources.toml).
+  ash:
+    image: ghcr.io/jamesfpate/ash:latest
+    container_name: ash
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.25
+    environment:
+      - TZ=${TZ}
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3000
+      # SvelteKit adapter-node: must match the URL used in the browser or form actions fail CSRF checks
+      - ORIGIN=https://ash.${DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ash.rule=Host(`ash.${DOMAIN}`)"
+      - "traefik.http.routers.ash.entrypoints=websecure"
+      - "traefik.http.routers.ash.middlewares=ipallowlist"
+      - "traefik.http.services.ash.loadbalancer.server.port=3000"
