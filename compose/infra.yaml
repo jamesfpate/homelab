@@ -52,6 +52,8 @@ services:
       default: # reach mongo / accept periphery connection
       vlan-private:
         ipv4_address: 192.168.1.14
+    ports:
+      - 9120:9120 # fallback UI at http://<unraid-ip>:9120 if Traefik is down
     env_file: /mnt/user/appdata/komodo/compose.env
     environment:
       TZ: ${TZ:-America/New_York}
