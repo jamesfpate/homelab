@@ -17,19 +17,23 @@ Setup for unraid homelab
 - container images auto-update daily at 03:00 (Komodo "Global Auto Update"). Pin a version in the image tag to hold it back.
 - Komodo itself (`compose/infra.yaml`) is updated by hand in Compose Manager.
 
+## Hosts & devices
+192.168.1.1 - UniFi Dream Machine Pro (gateway, UniFi Protect cameras)  
+192.168.1.41 - KVM (remote console for the Unraid server)  
+192.168.1.42 - Unraid server (iris) - unraid.domain.com  
+
 ## Services
 192.168.1.2 - Traefik - traefik.domain.com  
-192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Overseerr)  
-192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.4 - Dyndns - dyndns.domain.com  
-192.168.1.6 - unraid proxy - urnaid.domain.com  
-192.168.1.10 - Plex - plex.domain.com  
+192.168.1.6 - unraid proxy (routes unraid.domain.com to 192.168.1.42)  
+192.168.1.10 / 192.168.60.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.13 - postgres  
-unraid-ip:9120 - Komodo - komodo.domain.com  
-192.168.40.40 - Home Assistant - ha.domain.com  
-192.168.60.60 - qBittorrent - downloads.domain.com  
-192.168.60.61 - Prowlarr - prowlarr.domain.com  
+192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
+192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
+192.168.1.42:9120 - Komodo - komodo.domain.com  
+192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Overseerr)  
+192.168.60.61 - Prowlarr - indexer.domain.com  
 192.168.60.62 - Sonarr - tv.domain.com  
 192.168.60.63 - Radarr - movies.domain.com  
 192.168.60.64 - Bazarr - subtitles.domain.com  
