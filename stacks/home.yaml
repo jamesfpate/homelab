@@ -23,8 +23,6 @@ services:
       #- /dev/ttyACM0:/dev/ttyACM0 # Zooz 800 Z-Wave
     environment:
       - TZ=${TZ}
-      - INIT_USERNAME=${HA_USER}
-      - INIT_PASSWORD=${HA_PASS}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=br0" # must match HA trusted proxy 192.168.1.2
