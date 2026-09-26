@@ -7,6 +7,7 @@ Setup for unraid homelab
 
 ### Unraid app setup
 - run `scripts/create-networks.sh` once on the host to create the VLAN networks.
+- `mkdir -p /mnt/user/appdata/komodo/ferretdb-state && chown 1000:1000 /mnt/user/appdata/komodo/ferretdb-state` (FerretDB runs as uid 1000).
 - install community app compose manager and add `compose/infra.yaml` as a stack named `komodo`, using `/mnt/user/appdata/env/.env`, and start it.
 - in Komodo, create a Resource Sync named `homelab` pointing at this repo with resource path `komodo/resources.toml`, then run it to create the stacks in `stacks/`.
 - in Komodo, add a Pushover alerter for failed deploys / updates.

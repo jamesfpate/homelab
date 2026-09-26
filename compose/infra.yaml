@@ -47,6 +47,8 @@ services:
     networks:
       - komodo
     volumes:
+      ## FerretDB runs as uid 1000: before first start, chown 1000:1000 this folder
+      ## or it crash-loops with "open /state/state.json: permission denied".
       - /mnt/user/appdata/komodo/ferretdb-state:/state
     environment:
       FERRETDB_POSTGRESQL_URL: postgres://${KOMODO_DB_USERNAME}:${KOMODO_DB_PASSWORD}@komodo-postgres:5432/postgres
