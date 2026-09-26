@@ -7,7 +7,8 @@
 ## Updates are hands-off:
 ## - Compose file changes pushed to main deploy within ~5 min ("Deploy on push").
 ## - New images for each stack's tags are pulled + redeployed daily at 03:00 by the
-##   built-in "Global Auto Update" procedure (auto_update = true below).
+##   "Global Auto Update" procedure below (auto_update = true on each stack). It's declared
+##   here because Komodo only creates its default procedures on a brand-new install.
 ## Version pinning lives in the compose files' image tags (e.g. postgres:17), not here.
 ##
 ## project_name must match the compose project name each stack is currently running
@@ -17,7 +18,7 @@
 name = "proxy"
 tags = ["homelab"]
 [stack.config]
-server = "Local"
+server = "Unraid"
 project_name = "proxy"
 repo = "jamesfpate/homelab"
 branch = "main"
@@ -29,7 +30,7 @@ auto_update = true
 name = "core"
 tags = ["homelab"]
 [stack.config]
-server = "Local"
+server = "Unraid"
 project_name = "core"
 repo = "jamesfpate/homelab"
 branch = "main"
@@ -41,7 +42,7 @@ auto_update = true
 name = "home"
 tags = ["homelab"]
 [stack.config]
-server = "Local"
+server = "Unraid"
 project_name = "home"
 repo = "jamesfpate/homelab"
 branch = "main"
@@ -53,7 +54,7 @@ auto_update = true
 name = "media"
 tags = ["homelab"]
 [stack.config]
-server = "Local"
+server = "Unraid"
 project_name = "media"
 repo = "jamesfpate/homelab"
 branch = "main"
@@ -84,4 +85,18 @@ executions = [
 name = "Deploy changed stacks"
 executions = [
   { execution.type = "BatchDeployStackIfChanged", execution.params.pattern = "*" },
+]
+
+[[procedure]]
+name = "Global Auto Update"
+description = "Pulls and auto updates Stacks using 'poll_for_updates' or 'auto_update'."
+tags = ["homelab"]
+[procedure.config]
+schedule = "Every day at 03:00"
+failure_alert = true
+
+[[procedure.config.stage]]
+name = "Stage 1"
+executions = [
+  { execution.type = "GlobalAutoUpdate", execution.params.skip_auto_update = false },
 ]

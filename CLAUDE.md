@@ -63,7 +63,7 @@ The homelab uses VLAN segmentation with macvlan networks:
 ### Important Considerations
 - Environment variables are NOT stored in the repo (kept in server's `.env` file)
 - All compose files assume Unraid paths (`/mnt/user/...`)
-- Services are deployed through a Komodo Resource Sync of this repo; Komodo config lives in `/mnt/user/appdata/komodo/compose.env`
+- Services are deployed through a Komodo Resource Sync of this repo; Komodo (v2, FerretDB backend) is configured in `compose/infra.yaml` with variables from the main `.env`
 - Unraid's `/etc` is RAM-backed, so Komodo's keys/backups/periphery root are kept under `/mnt/user/appdata/komodo/`
 - IP addresses are statically assigned per the README.md mappings
 - **SSL Renewal**: Traefik requires `CF_API_EMAIL=${EMAIL}` and `CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}` environment variables for Let's Encrypt SSL certificate renewal via Cloudflare DNS challenge

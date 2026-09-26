@@ -7,8 +7,7 @@ Setup for unraid homelab
 
 ### Unraid app setup
 - run `scripts/create-networks.sh` once on the host to create the VLAN networks.
-- copy `komodo/compose.env.example` to `/mnt/user/appdata/komodo/compose.env` and fill it in.
-- install community app compose manager and add `compose/infra.yaml` as a stack (Komodo) and start it.
+- install community app compose manager and add `compose/infra.yaml` as a stack named `komodo`, using `/mnt/user/appdata/env/.env`, and start it.
 - in Komodo, create a Resource Sync named `homelab` pointing at this repo with resource path `komodo/resources.toml`, then run it to create the stacks in `stacks/`.
 - in Komodo, add a Pushover alerter for failed deploys / updates.
 
@@ -25,7 +24,7 @@ Setup for unraid homelab
 192.168.1.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.13 - postgres  
-192.168.1.14 - Komodo - komodo.domain.com  
+unraid-ip:9120 - Komodo - komodo.domain.com  
 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.60.60 - qBittorrent - downloads.domain.com  
 192.168.60.61 - Prowlarr - prowlarr.domain.com  

@@ -58,7 +58,7 @@ services:
       - "traefik.http.services.dyndns.loadbalancer.server.scheme=http"
     
   postgres:
-    image: postgres:17
+    image: postgres:18-trixie # pin major + Debian base: a major bump needs dump/restore, a base change needs a REINDEX
     container_name: postgres
     networks:
       vlan-private:
@@ -66,7 +66,7 @@ services:
     ports:
       - "5432:5432"  # For debugging/backup purposes
     volumes:
-      - /mnt/user/appdata/postgres/data:/var/lib/postgresql/data
+      - /mnt/user/appdata/postgres/db:/var/lib/postgresql # 18+ layout (data in 18/docker); old 17 data left in postgres/data
       - /mnt/user/appdata/postgres/backups:/backups
       - /mnt/user/appdata/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
     environment:
@@ -100,6 +100,7 @@ services:
   unraid-proxy:
     image: alpine:latest
     container_name: unraid-proxy
+    restart: unless-stopped
     networks:
       vlan-private:
         ipv4_address: 192.168.1.6

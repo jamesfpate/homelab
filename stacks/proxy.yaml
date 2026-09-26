@@ -6,20 +6,23 @@ networks:
     external: true
   vlan-downloads:
     external: true
+  komodo: # created by compose/infra.yaml; lets Traefik reach komodo-core
+    external: true
 
 services:
-  traefik-internal:
+  traefik:
     environment:
       - TZ=America/New_York
       - CF_API_EMAIL=${EMAIL}
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     image: traefik:3
-    container_name: traefik-internal
+    container_name: traefik
     networks:
       vlan-private:
         ipv4_address: 192.168.1.2
       vlan-iot:
       vlan-downloads:
+      komodo:
     ports:
       - "80:80" 
       - "443:443"
