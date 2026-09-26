@@ -30,6 +30,8 @@ services:
       - "traefik.http.services.db.loadbalancer.passHostHeader=true"
       - "traefik.http.services.db.loadbalancer.server.scheme=http"
 
+  # Keeps the UDM WireGuard VPN endpoint hostname (DNS-only record) pointed at the home IP.
+  # Not needed for the Cloudflare tunnel; only for things reached directly on the WAN IP.
   dyndns:
     image: qmcgaw/ddns-updater
     container_name: dyndns
@@ -40,7 +42,7 @@ services:
       - PGID=${PGID}
       - PERIOD=5m
       - DOMAIN=${DOMAIN}
-      - SHOUTRRR_ADDRESS=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
+      - SHOUTRRR_ADDRESSES=pushover://shoutrrr:${PUSHOVER_TOKEN}@${PUSHOVER_USER}
     networks:
       vlan-private:
         ipv4_address: 192.168.1.4

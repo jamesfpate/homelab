@@ -18,7 +18,7 @@ Setup for unraid homelab
 - Komodo itself (`compose/infra.yaml`) is updated by hand in Compose Manager.
 
 ## Hosts & devices
-192.168.1.1 - UniFi Dream Machine Pro (gateway, UniFi Protect cameras)  
+192.168.1.1 - UniFi Dream Machine Pro (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  
 192.168.1.41 - KVM (remote console for the Unraid server)  
 192.168.1.42 - Unraid server (iris) - unraid.domain.com  
 
