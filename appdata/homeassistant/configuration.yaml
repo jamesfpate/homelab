@@ -9,7 +9,6 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 192.168.1.2
+# Reverse proxy trust is configured in the UI since HA 2026.8 (YAML removed in 2027.2):
+# Settings > System > Network > HTTP server: Trust X-Forwarded-For on, Trusted proxies 192.168.1.2 (Traefik).
+# On a fresh install, set this via http://192.168.1.40:8123 before using https://ha.<domain> (otherwise 400).
