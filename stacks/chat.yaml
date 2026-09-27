@@ -1,0 +1,42 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+  voice: # created by stacks/voice.yaml; reach Chatterbox/Kokoro by name
+    external: true
+
+# Env values below are first-start defaults; settings changed in Admin Settings persist in its DB and win.
+# First account created becomes admin -> then Admin Settings > General > disable new sign-ups.
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    networks:
+      voice:
+      vlan-private:
+        ipv4_address: 192.168.1.54
+    environment:
+      - TZ=${TZ}
+      - WEBUI_URL=https://chat.${DOMAIN}
+      - WEBUI_SECRET_KEY=${OPEN_WEBUI_SECRET_KEY}
+      - OLLAMA_BASE_URL=http://192.168.1.52:11434
+      - ENABLE_OPENAI_API=false
+      # Speech-to-text: built-in Whisper on the CPU (keeps the GPU free for the chat model + Chatterbox)
+      - WHISPER_MODEL=small
+      - WHISPER_LANGUAGE=en
+      # Text-to-speech: existing Chatterbox server (OpenAI-compatible); Kokoro is http://kokoro:8880/v1
+      - AUDIO_TTS_ENGINE=openai
+      - AUDIO_TTS_OPENAI_API_BASE_URL=http://chatterbox:8004/v1
+      - AUDIO_TTS_OPENAI_API_KEY=local # must be non-empty; not checked
+      - AUDIO_TTS_MODEL=chatterbox-turbo
+      - AUDIO_TTS_VOICE=Jade.wav
+    volumes:
+      - /mnt/user/appdata/open-webui:/app/backend/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=br0"
+      - "traefik.http.routers.chat.rule=Host(`chat.${DOMAIN}`)"
+      - "traefik.http.routers.chat.entrypoints=websecure"
+      - "traefik.http.routers.chat.middlewares=ipallowlist"
+      - "traefik.http.services.chat.loadbalancer.server.port=8080"

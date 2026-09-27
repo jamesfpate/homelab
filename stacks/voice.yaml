@@ -2,7 +2,8 @@ networks:
   vlan-private:
     external: true
     name: br0
-  voice: # private bridge: only the Wyoming TTS proxies talk to the TTS engines
+  voice: # private bridge to the TTS engines (Wyoming TTS proxies, stacks/chat.yaml)
+    name: voice
 
 # Local-first voice assistant backends for Home Assistant (Settings > Voice assistants).
 # GPU: RTX PRO 4000 Blackwell SFF (24 GB) via the Unraid "Nvidia Driver" plugin (open-source

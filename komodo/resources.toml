@@ -88,6 +88,19 @@ file_paths = ["stacks/voice.yaml"]
 additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
 auto_update = true
 
+[[stack]]
+name = "chat"
+tags = ["homelab"]
+after = ["voice"] # joins the voice network created by the voice stack
+[stack.config]
+server = "Unraid"
+project_name = "chat"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/chat.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
 [[procedure]]
 name = "Deploy on push"
 description = "Apply this sync, then redeploy any stack whose compose files changed on main."

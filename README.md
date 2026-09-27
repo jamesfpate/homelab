@@ -17,6 +17,15 @@ Setup for unraid homelab
 - container images auto-update daily at 03:00 (Komodo "Global Auto Update"). Pin a version in the image tag to hold it back.
 - Komodo itself (`compose/infra.yaml`) is updated daily at 04:00 by `scripts/update-komodo.sh`, run from the Unraid User Scripts plugin (installs infra.yaml from main after validating it, then pulls new images).
 
+## UniFi network notes
+- VLANs 20/40/60/70 have "Isolate Network" on (auto "Isolated Networks" block policies, priority 30000).
+- Custom firewall policy "Main to IoT": allow 192.168.1.0/24 -> 192.168.40.0/24, auto-allow return traffic
+  (lets phones/computers control and cast to IoT devices; IoT still can't initiate into main).
+- Gateway mDNS Proxy: Custom, main + IoT, all services (Spotify Connect / Cast / AirPlay discovery across VLANs).
+- IGMP snooping off on main and IoT (multicast discovery reliability).
+- Keep 192.168.1.50-53 and other container IPs outside the UDM DHCP range (Docker assigns them, UDM doesn't know).
+- If casting to the Onkyo wakes the TV: LG SIMPLINK Auto Power Sync off (keeps ARC/volume control).
+
 ## Hosts & devices
 192.168.1.1 - UniFi Dream Machine Pro (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  
 192.168.1.41 - KVM (remote console for the Unraid server)  
@@ -35,6 +44,7 @@ Setup for unraid homelab
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
 192.168.1.52 - Ollama local LLM (:11434, GPU)  
 192.168.1.53 - Kokoro text-to-speech (Wyoming :10300, CPU)  
+192.168.1.54 - chat.domain.com  
 192.168.1.42:9120 - Komodo - komodo.domain.com  
 192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Seerr)  
 192.168.60.61 - Prowlarr - indexer.domain.com  
