@@ -76,6 +76,18 @@ registry_provider = "ghcr.io" # private image: uses the ghcr.io registry account
 registry_account = "jamesfpate"
 auto_update = true
 
+[[stack]]
+name = "voice"
+tags = ["homelab"]
+[stack.config]
+server = "Unraid"
+project_name = "voice"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/voice.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+auto_update = true
+
 [[procedure]]
 name = "Deploy on push"
 description = "Apply this sync, then redeploy any stack whose compose files changed on main."

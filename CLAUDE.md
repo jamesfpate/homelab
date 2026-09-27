@@ -16,6 +16,7 @@ This is a homelab infrastructure-as-code repository for managing Docker-based se
 # - core.yaml - Core infrastructure (databases, DNS, monitoring)
 # - home.yaml - Home automation (Home Assistant)
 # - media.yaml - Media services (Plex, *arr stack)
+# - voice.yaml - Local voice assistant backends (Whisper, Chatterbox, Kokoro, Ollama) on the RTX GPU
 # - ash.yaml - Personal SvelteKit site (private ghcr.io image, internal only)
 
 # View service logs (on Unraid host)
@@ -58,7 +59,7 @@ The homelab uses VLAN segmentation with macvlan networks:
 - **Service Discovery**: All HTTP services exposed via `service.local.example.com` subdomains
 - **SSL/Security**: Traefik handles all SSL certificates and IP whitelisting
 - **Data Persistence**: Application data in `/mnt/user/appdata/[service]/`
-- **Hardware Access**: Intel iGPU passed through for Plex transcoding; camera person detection is done by UniFi Protect on the Dream Machine Pro, surfaced in Home Assistant via the UniFi Protect integration
+- **Hardware Access**: Intel iGPU for Plex transcoding; NVIDIA RTX PRO 4000 Blackwell (24 GB, Unraid Nvidia Driver plugin, open kernel module) for the voice stack via `runtime: nvidia`; camera person detection is done by UniFi Protect on the Dream Machine Pro, surfaced in Home Assistant via the UniFi Protect integration
 - **Updates**: Komodo auto-deploys compose changes pushed to main (~5 min) and auto-updates images daily at 03:00; pin versions via image tags (databases stay on a fixed major)
 
 ### Important Considerations

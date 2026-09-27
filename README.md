@@ -31,6 +31,10 @@ Setup for unraid homelab
 192.168.1.13 - postgres  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
+192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
+192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
+192.168.1.52 - Ollama local LLM (:11434, GPU)  
+192.168.1.53 - Kokoro text-to-speech (Wyoming :10300, CPU)  
 192.168.1.42:9120 - Komodo - komodo.domain.com  
 192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Seerr)  
 192.168.60.61 - Prowlarr - indexer.domain.com  

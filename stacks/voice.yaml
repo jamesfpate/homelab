@@ -2,13 +2,15 @@ networks:
   vlan-private:
     external: true
     name: br0
-  voice: # private bridge: only the Wyoming TTS proxy talks to Kokoro
+  voice: # private bridge: only the Wyoming TTS proxies talk to the TTS engines
 
 # Local-first voice assistant backends for Home Assistant (Settings > Voice assistants).
 # GPU: RTX PRO 4000 Blackwell SFF (24 GB) via the Unraid "Nvidia Driver" plugin (open-source
-# driver required for Blackwell), which provides the nvidia runtime.
-# HA integrations: Wyoming (whisper 192.168.1.50:10300, tts 192.168.1.51:10300),
-# Ollama (http://192.168.1.52:11434) for the conversation agent and AI Task.
+# kernel module required for Blackwell), which provides the nvidia runtime.
+# HA integrations:
+#   Wyoming: whisper 192.168.1.50:10300 (STT), tts-chatterbox 192.168.1.51:10300, tts-kokoro 192.168.1.53:10300
+#   Ollama:  http://192.168.1.52:11434 (conversation agent, thinking off + AI Task agent, thinking on)
+# VRAM budget (~24 GB): Ollama model + Whisper + Chatterbox on GPU; Kokoro runs on CPU for comparison.
 services:
   # Speech-to-text (Wyoming) on the GPU
   whisper:
@@ -30,37 +32,59 @@ services:
     volumes:
       - /mnt/user/appdata/whisper:/config
 
-  # Text-to-speech: Kokoro-82M (natural voices) on the GPU, cu128 build for Blackwell
-  kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-gpu:latest-cu128
-    container_name: kokoro
+  # Main voice: Chatterbox Turbo (350M, voice cloning, [laugh]-style tags) on the GPU.
+  # Blackwell build (cu128). Default config already uses repo_id chatterbox-turbo and built-in voices.
+  chatterbox:
+    image: ghcr.io/devnen/chatterbox-tts-server:main-cu128
+    container_name: chatterbox
     restart: unless-stopped
     runtime: nvidia
     networks:
       - voice
     environment:
-      - USE_GPU=true
       - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8880/v1/test"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      # Don't mount /app/voices: it would hide the built-in voices shipped in the image.
+      - /mnt/user/appdata/chatterbox/model_cache:/app/model_cache
+      - /mnt/user/appdata/chatterbox/hf_cache:/app/hf_cache
+      - /mnt/user/appdata/chatterbox/reference_audio:/app/reference_audio # clips for voice cloning
 
-  # Wyoming <-> OpenAI-compatible proxy so HA can use Kokoro; streams speech sentence by sentence
-  tts:
+  tts-chatterbox:
     image: ghcr.io/roryeckel/wyoming_openai:latest
-    container_name: tts
+    container_name: tts-chatterbox
     restart: unless-stopped
     depends_on:
-      kokoro:
-        condition: service_healthy
+      - chatterbox
     networks:
       voice:
       vlan-private:
         ipv4_address: 192.168.1.51
+    environment:
+      - WYOMING_URI=tcp://0.0.0.0:10300
+      - WYOMING_LANGUAGES=en
+      - TTS_OPENAI_URL=http://chatterbox:8004/v1
+      - TTS_MODELS=chatterbox-turbo
+      - TTS_STREAMING_MODELS=chatterbox-turbo # sentence-by-sentence, first sentence plays while the rest renders
+
+  # Comparison / fallback voice: Kokoro on CPU (costs no VRAM). Move to the GPU image if it wins.
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: kokoro
+    restart: unless-stopped
+    networks:
+      - voice
+
+  tts-kokoro:
+    image: ghcr.io/roryeckel/wyoming_openai:latest
+    container_name: tts-kokoro
+    restart: unless-stopped
+    depends_on:
+      - kokoro
+    networks:
+      voice:
+      vlan-private:
+        ipv4_address: 192.168.1.53
     environment:
       - WYOMING_URI=tcp://0.0.0.0:10300
       - WYOMING_LANGUAGES=en
@@ -69,7 +93,8 @@ services:
       - TTS_MODELS=kokoro
       - TTS_STREAMING_MODELS=kokoro
 
-  # Local LLM: HA conversation agent + AI Task for scheduled automations. Unauthenticated API: br0 only.
+  # Local LLM: HA conversation agent (thinking off) + AI Task agent (thinking on), one resident model.
+  # Unauthenticated API: br0 only. Model: gemma4:26b-nvfp4 (pull after first start).
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
