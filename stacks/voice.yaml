@@ -70,6 +70,10 @@ services:
       - WYOMING_LANGUAGES=en
       - TTS_OPENAI_URL=http://chatterbox:8004/v1
       - TTS_MODELS=chatterbox-turbo
+      # Chatterbox's OpenAI endpoint only accepts exact voice file names (built-ins, or clips added to
+      # reference_audio for cloning); without this list the proxy falls back to OpenAI names (alloy...) -> 404.
+      # Add cloned voice file names here too.
+      - TTS_VOICES=Abigail.wav Adrian.wav Alexander.wav Alice.wav Austin.wav Axel.wav Connor.wav Cora.wav Elena.wav Eli.wav Emily.wav Everett.wav Gabriel.wav Gianna.wav Henry.wav Ian.wav Jade.wav Jeremiah.wav Jordan.wav Julian.wav Layla.wav Leonardo.wav Michael.wav Miles.wav Olivia.wav Ryan.wav Taylor.wav Thomas.wav
       - TTS_STREAMING_MODELS=chatterbox-turbo # sentence-by-sentence, first sentence plays while the rest renders
 
   # Comparison / fallback voice: Kokoro on CPU (costs no VRAM). Move to the GPU image if it wins.
