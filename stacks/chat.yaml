@@ -2,7 +2,7 @@ networks:
   vlan-private:
     external: true
     name: br0
-  voice: # created by stacks/voice.yaml; reach Chatterbox/Kokoro by name
+  voice: # created by stacks/ai.yaml; reach Chatterbox/Kokoro by name
     external: true
 
 # Env values below are first-start defaults; settings changed in Admin Settings persist in its DB and win.

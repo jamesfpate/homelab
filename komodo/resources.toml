@@ -77,21 +77,21 @@ registry_account = "jamesfpate"
 auto_update = true
 
 [[stack]]
-name = "voice"
+name = "ai"
 tags = ["homelab"]
 [stack.config]
 server = "Unraid"
-project_name = "voice"
+project_name = "ai"
 repo = "jamesfpate/homelab"
 branch = "main"
-file_paths = ["stacks/voice.yaml"]
+file_paths = ["stacks/ai.yaml"]
 additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
 auto_update = true
 
 [[stack]]
 name = "chat"
 tags = ["homelab"]
-after = ["voice"] # joins the voice network created by the voice stack
+after = ["ai"] # joins the voice network created by the ai stack
 [stack.config]
 server = "Unraid"
 project_name = "chat"

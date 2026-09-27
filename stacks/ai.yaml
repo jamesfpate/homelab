@@ -5,7 +5,7 @@ networks:
   voice: # private bridge to the TTS engines (Wyoming TTS proxies, stacks/chat.yaml)
     name: voice
 
-# Local-first voice assistant backends for Home Assistant (Settings > Voice assistants).
+# Local AI backends: Ollama (HA voice agent, AI Task, chat) and speech engines (HA voice pipelines, chat).
 # GPU: RTX PRO 4000 Blackwell SFF (24 GB) via the Unraid "Nvidia Driver" plugin (open-source
 # kernel module required for Blackwell), which provides the nvidia runtime.
 # HA integrations:
