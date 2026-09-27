@@ -15,7 +15,7 @@ Setup for unraid homelab
 ### Updates
 - pushing compose changes to `main` deploys them within ~5 minutes (Komodo "Deploy on push" procedure).
 - container images auto-update daily at 03:00 (Komodo "Global Auto Update"). Pin a version in the image tag to hold it back.
-- Komodo itself (`compose/infra.yaml`) is updated by hand in Compose Manager.
+- Komodo itself (`compose/infra.yaml`) is updated daily at 04:00 by `scripts/update-komodo.sh`, run from the Unraid User Scripts plugin (installs infra.yaml from main after validating it, then pulls new images).
 
 ## Hosts & devices
 192.168.1.1 - UniFi Dream Machine Pro (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  

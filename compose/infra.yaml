@@ -1,7 +1,7 @@
 # Bootstrap stack deployed by Unraid Compose Manager (stack name: komodo). Contains only Komodo,
-# which then deploys everything in /stacks. Komodo can't safely redeploy itself, so this is the
-# only stack updated by hand (Compose Manager -> Update Stack). Variables come from
-# /mnt/user/appdata/env/.env.
+# which then deploys everything in /stacks. Komodo can't safely redeploy itself, so this stack
+# is updated from the Unraid host by scripts/update-komodo.sh (User Scripts, daily), or by hand
+# via Compose Manager -> Update Stack. Variables come from /mnt/user/appdata/env/.env.
 #
 # Based on https://github.com/moghtech/komodo/blob/main/compose/ferretdb.compose.yaml
 #
