@@ -86,6 +86,7 @@ schedule = "0 */5 * * * *" # sec min hour day month weekday: every 5 minutes
 ## Note: a stack Komodo has never deployed counts as "changed" and gets a full deploy on the
 ## next run, so new stacks added here deploy automatically within ~5 min of pushing.
 schedule_enabled = true
+schedule_alert = false # default true = a notification on every run; only alert on failures
 failure_alert = true
 
 [[procedure.config.stage]]
@@ -106,6 +107,7 @@ description = "Pulls and auto updates Stacks using 'poll_for_updates' or 'auto_u
 tags = ["homelab"]
 [procedure.config]
 schedule = "Every day at 03:00"
+schedule_alert = false # default true = a notification on every run; only alert on failures
 failure_alert = true
 
 [[procedure.config.stage]]

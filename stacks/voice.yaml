@@ -1,0 +1,87 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+  voice: # private bridge: only the Wyoming TTS proxy talks to Kokoro
+
+# Local-first voice assistant backends for Home Assistant (Settings > Voice assistants).
+# GPU: RTX PRO 4000 Blackwell SFF (24 GB) via the Unraid "Nvidia Driver" plugin (open-source
+# driver required for Blackwell), which provides the nvidia runtime.
+# HA integrations: Wyoming (whisper 192.168.1.50:10300, tts 192.168.1.51:10300),
+# Ollama (http://192.168.1.52:11434) for the conversation agent and AI Task.
+services:
+  # Speech-to-text (Wyoming) on the GPU
+  whisper:
+    image: lscr.io/linuxserver/faster-whisper:gpu
+    container_name: whisper
+    restart: unless-stopped
+    runtime: nvidia
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.50
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - WHISPER_MODEL=turbo # large-v3-turbo: near large-v3 accuracy, much faster
+      - WHISPER_LANG=en
+    volumes:
+      - /mnt/user/appdata/whisper:/config
+
+  # Text-to-speech: Kokoro-82M (natural voices) on the GPU, cu128 build for Blackwell
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-gpu:latest-cu128
+    container_name: kokoro
+    restart: unless-stopped
+    runtime: nvidia
+    networks:
+      - voice
+    environment:
+      - USE_GPU=true
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8880/v1/test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Wyoming <-> OpenAI-compatible proxy so HA can use Kokoro; streams speech sentence by sentence
+  tts:
+    image: ghcr.io/roryeckel/wyoming_openai:latest
+    container_name: tts
+    restart: unless-stopped
+    depends_on:
+      kokoro:
+        condition: service_healthy
+    networks:
+      voice:
+      vlan-private:
+        ipv4_address: 192.168.1.51
+    environment:
+      - WYOMING_URI=tcp://0.0.0.0:10300
+      - WYOMING_LANGUAGES=en
+      - TTS_OPENAI_URL=http://kokoro:8880/v1
+      - TTS_BACKEND=KOKORO_FASTAPI
+      - TTS_MODELS=kokoro
+      - TTS_STREAMING_MODELS=kokoro
+
+  # Local LLM: HA conversation agent + AI Task for scheduled automations. Unauthenticated API: br0 only.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    runtime: nvidia
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.52
+    environment:
+      - TZ=${TZ}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - OLLAMA_KEEP_ALIVE=24h # keep the model in VRAM so voice replies don't wait on a reload
+    volumes:
+      - /mnt/user/appdata/ollama:/root/.ollama
