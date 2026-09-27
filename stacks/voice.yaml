@@ -29,6 +29,8 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - WHISPER_MODEL=turbo # large-v3-turbo: near large-v3 accuracy, much faster
       - WHISPER_LANG=en
+      - CUDA_CACHE_PATH=/config/cuda-cache # persist Blackwell JIT-compiled kernels across recreates
+      - CUDA_CACHE_MAXSIZE=4294967296
     volumes:
       - /mnt/user/appdata/whisper:/config
 
@@ -44,6 +46,8 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUDA_CACHE_PATH=/app/model_cache/cuda-cache # persist Blackwell JIT-compiled kernels across recreates
+      - CUDA_CACHE_MAXSIZE=4294967296
       - TTS_BF16=auto # bf16 main model when supported (Blackwell): less VRAM, faster (default off = fp32, ~4.5 GB)
     volumes:
       # Don't mount /app/voices: it would hide the built-in voices shipped in the image.
@@ -111,5 +115,9 @@ services:
       - OLLAMA_KEEP_ALIVE=24h # keep the model in VRAM so voice replies don't wait on a reload
       - OLLAMA_FLASH_ATTENTION=1
       - OLLAMA_KV_CACHE_TYPE=q8_0 # ~half the context-cache VRAM of f16, negligible quality loss (Ollama FAQ)
+      # First request after a (re)create was ~0.7 tok/s while CUDA JIT-compiled kernels for Blackwell;
+      # persisting the cache keeps later restarts/updates fast (~117 tok/s warm).
+      - CUDA_CACHE_PATH=/root/.ollama/cuda-cache
+      - CUDA_CACHE_MAXSIZE=4294967296
     volumes:
       - /mnt/user/appdata/ollama:/root/.ollama
