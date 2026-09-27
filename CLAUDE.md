@@ -16,6 +16,7 @@ This is a homelab infrastructure-as-code repository for managing Docker-based se
 # - core.yaml - Core infrastructure (databases, DNS, monitoring)
 # - home.yaml - Home automation (Home Assistant)
 # - media.yaml - Media services (Plex, *arr stack)
+# - music.yaml - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers)
 # - ai.yaml - Local AI backends (Ollama, Whisper, Chatterbox, Kokoro) on the RTX GPU
 # - ash.yaml - Personal SvelteKit site (private ghcr.io image, internal only)
 

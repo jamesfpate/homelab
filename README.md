@@ -23,6 +23,7 @@ Setup for unraid homelab
   (lets phones/computers control and cast to IoT devices; IoT still can't initiate into main).
 - Gateway mDNS Proxy: Custom, main + IoT, all services (Spotify Connect / Cast / AirPlay discovery across VLANs).
 - IGMP snooping off on main and IoT (multicast discovery reliability).
+- Internal names are per-host UDM local DNS records (A -> 192.168.1.2, Traefik); no wildcard. New Traefik service = add a record.
 - Keep 192.168.1.50-53 and other container IPs outside the UDM DHCP range (Docker assigns them, UDM doesn't know).
 - If casting to the Onkyo wakes the TV: LG SIMPLINK Auto Power Sync off (keeps ARC/volume control).
 
@@ -40,6 +41,7 @@ Setup for unraid homelab
 192.168.1.13 - postgres  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
+192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
 192.168.1.52 - Ollama local LLM (:11434, GPU)  

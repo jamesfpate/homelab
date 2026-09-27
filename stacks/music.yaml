@@ -1,0 +1,27 @@
+networks:
+  vlan-iot:
+    external: true
+
+# Music Assistant: Spotify (and other sources) -> Onkyo receiver, KEF LSX II, Satellite1.1 speakers.
+# Must share a layer-2 network with its players for discovery/streaming (MA docs), so it lives on
+# the IoT VLAN with them (macvlan = supported alternative to host networking).
+# HA integration URL: http://192.168.40.45:8095. Web UI via Traefik (on vlan-iot): music.<domain>.
+services:
+  music-assistant:
+    image: ghcr.io/music-assistant/server:latest
+    container_name: music-assistant
+    restart: unless-stopped
+    networks:
+      vlan-iot:
+        ipv4_address: 192.168.40.45
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /mnt/user/appdata/music-assistant:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-iot"
+      - "traefik.http.routers.music.rule=Host(`music.${DOMAIN}`)"
+      - "traefik.http.routers.music.entrypoints=websecure"
+      - "traefik.http.routers.music.middlewares=ipallowlist"
+      - "traefik.http.services.music.loadbalancer.server.port=8095"
