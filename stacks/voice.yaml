@@ -44,6 +44,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TTS_BF16=auto # bf16 main model when supported (Blackwell): less VRAM, faster (default off = fp32, ~4.5 GB)
     volumes:
       # Don't mount /app/voices: it would hide the built-in voices shipped in the image.
       - /mnt/user/appdata/chatterbox/model_cache:/app/model_cache
@@ -108,5 +109,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
       - OLLAMA_KEEP_ALIVE=24h # keep the model in VRAM so voice replies don't wait on a reload
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KV_CACHE_TYPE=q8_0 # ~half the context-cache VRAM of f16, negligible quality loss (Ollama FAQ)
     volumes:
       - /mnt/user/appdata/ollama:/root/.ollama
