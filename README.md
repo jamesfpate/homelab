@@ -32,10 +32,10 @@ Setup for unraid homelab
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.1.42:9120 - Komodo - komodo.domain.com  
-192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Overseerr)  
+192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Seerr)  
 192.168.60.61 - Prowlarr - indexer.domain.com  
 192.168.60.62 - Sonarr - tv.domain.com  
 192.168.60.63 - Radarr - movies.domain.com  
 192.168.60.64 - Bazarr - subtitles.domain.com  
-192.168.60.65 - Overseerr - request.domain.com  
+192.168.60.65 - Seerr (was Overseerr) - request.domain.com  
 192.168.60.66 - sabnzbd - usenet.domain.com  

@@ -158,30 +158,30 @@ services:
       - "traefik.http.services.bazarr.loadbalancer.passHostHeader=true"
       - "traefik.http.services.bazarr.loadbalancer.server.scheme=http"
   
-  overseerr: #requests
-    image: sctx/overseerr:latest
-    container_name: overseerr
+  seerr: #requests (successor to the archived Overseerr; migrated its config in place)
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true # required by Seerr (no built-in init process)
     restart: unless-stopped
     networks:
       vlan-downloads:
-        ipv4_address: 192.168.60.65
-    ports:
-      - "5055:5055" #web interface
+        ipv4_address: 192.168.60.65 # Cloudflare tunnel route request.<domain> points here
     volumes:
+      # Old Overseerr folder, reused. Seerr runs as uid 1000: chown -R 1000:1000 before first start.
       - /mnt/user/appdata/overseerr:/app/config
     environment:
       - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - DOMAIN=${DOMAIN}
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.overseerr.rule=Host(`request.${DOMAIN}`)"
-      - "traefik.http.routers.overseerr.entrypoints=websecure"
-      - "traefik.http.services.overseerr.loadbalancer.server.port=5055"
-      #- "traefik.http.routers.overseerr.middlewares=ipallowlist"
-      - "traefik.http.services.overseerr.loadbalancer.passHostHeader=true"
-      - "traefik.http.services.overseerr.loadbalancer.server.scheme=http"
+      - "traefik.http.routers.seerr.rule=Host(`request.${DOMAIN}`)"
+      - "traefik.http.routers.seerr.entrypoints=websecure"
+      - "traefik.http.services.seerr.loadbalancer.server.port=5055"
   
   sabnzbd:
     image: lscr.io/linuxserver/sabnzbd:latest
