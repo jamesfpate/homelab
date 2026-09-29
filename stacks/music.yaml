@@ -1,11 +1,20 @@
 networks:
+  vlan-private:
+    external: true
+    name: br0
   vlan-iot:
+    external: true
+  vlan-downloads:
     external: true
 
 # Music Assistant: Spotify (and other sources) -> Onkyo receiver, KEF LSX II, Satellite1.1 speakers.
 # Must share a layer-2 network with its players for discovery/streaming (MA docs), so it lives on
 # the IoT VLAN with them (macvlan = supported alternative to host networking).
 # HA integration URL: http://192.168.40.45:8095. Web UI via Traefik (on vlan-iot): music.<domain>.
+#
+# Self-hosted music (see README "Music"): Navidrome serves /mnt/user/plexmedia/music.
+# Phase 2 discovery services carry `profiles: ["discovery"]` so Komodo does not start them yet.
+# To turn them on, delete those profile lines (here and in media.yaml) and push.
 services:
   music-assistant:
     image: ghcr.io/music-assistant/server:latest
@@ -25,3 +34,66 @@ services:
       - "traefik.http.routers.music.entrypoints=websecure"
       - "traefik.http.routers.music.middlewares=ipallowlist"
       - "traefik.http.services.music.loadbalancer.server.port=8095"
+
+  navidrome: # music server for Symfonium (Android), Feishin (Mac), Music Assistant
+    image: deluan/navidrome:0.64.2
+    container_name: navidrome
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    networks:
+      vlan-private: # phones/Mac (LAN + UDM WireGuard) via Traefik
+        ipv4_address: 192.168.1.14
+      vlan-iot: # Music Assistant (IoT can't initiate into main)
+        ipv4_address: 192.168.40.46
+      vlan-downloads: # musicflow (VLAN 60 is isolated)
+        ipv4_address: 192.168.60.14
+    volumes:
+      - /mnt/user/appdata/navidrome:/data
+      - /mnt/user/plexmedia/music:/music
+    environment:
+      - TZ=${TZ}
+      - ND_MUSICFOLDER=/music
+      - ND_DATAFOLDER=/data
+      - ND_PLAYLISTSPATH=playlists # .nsp smart playlists in /music/playlists
+      - ND_SCANNER_SCHEDULE=@every 6h # file watcher handles most changes
+      - ND_SCANNER_PURGEMISSING=always # drop deleted inbox tracks from the DB
+      - ND_SUBSONIC_DEFAULTREPORTREALPATH=true # musicflow maps songs to files via the API
+      - ND_LISTENBRAINZ_ENABLED=true # link per user in Navidrome > Personal
+      - ND_ENABLESTARRATING=true
+      - ND_LOGLEVEL=info
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=br0"
+      - "traefik.http.routers.navidrome.rule=Host(`listen.${DOMAIN}`)"
+      - "traefik.http.routers.navidrome.entrypoints=websecure"
+      # No ipallowlist: it only allows 192.168.1.0/24 and would block WireGuard clients.
+      # Navidrome has its own auth and there is no public route.
+      - "traefik.http.services.navidrome.loadbalancer.server.port=4533"
+
+  musicflow: # Phase 2: keeps INBOX_SIZE unheard tracks in the inbox (Weekly Exploration, Fresh Releases, r/listentothis);
+    # star=keep, rate 1=dislike, heard+unstarred=delete, unheard never deleted
+    profiles: ["discovery"]
+    build: ../apps/musicflow
+    image: musicflow:local
+    pull_policy: build
+    container_name: musicflow
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.71
+    volumes:
+      - /mnt/user/appdata/musicflow:/config # beets db, logs, state
+      - /mnt/user/plexmedia/music:/music # same path Navidrome sees
+      - /mnt/user/downloads/slskd:/slskd
+    environment:
+      - TZ=${TZ}
+      - NAVIDROME_URL=http://192.168.60.14:4533
+      - NAVIDROME_USER=${NAVIDROME_USER}
+      - NAVIDROME_PASSWORD=${NAVIDROME_PASSWORD}
+      - LB_USER=${LISTENBRAINZ_USER}
+      - LB_TOKEN=${LISTENBRAINZ_TOKEN}
+      - SLSKD_URL=http://192.168.60.69:5030
+      - SLSKD_API_KEY=${SLSKD_API_KEY}
+      - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
+      - DRY_RUN=true # flip to false after checking the first run's log

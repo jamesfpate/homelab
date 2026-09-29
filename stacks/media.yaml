@@ -218,6 +218,91 @@ services:
       - "traefik.http.services.sabnzbd.loadbalancer.passHostHeader=true"
       - "traefik.http.services.sabnzbd.loadbalancer.server.scheme=http"
   
+  lidarr: #music albums (Usenet via Prowlarr + sabnzbd; Soulseek via Tubifarry plugin in phase 2)
+    # Nightly is required for plugins (Tubifarry). Pinned so the 03:00 auto-update can't pull untested nightlies.
+    image: lscr.io/linuxserver/lidarr:nightly-3.1.6.5078-ls218
+    container_name: lidarr
+    restart: unless-stopped
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.68
+    volumes:
+      - /mnt/user/appdata/lidarr:/config
+      - /mnt/user/plexmedia/music/library:/music/library # root folder; never the inbox
+      - /mnt/user/downloads/usenet:/downloads/usenet
+      - /mnt/user/downloads/slskd:/downloads/slskd # Tubifarry (phase 2)
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - DOMAIN=${DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lidarr.rule=Host(`albums.${DOMAIN}`)"
+      - "traefik.http.routers.lidarr.entrypoints=websecure"
+      - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
+      #- "traefik.http.routers.lidarr.middlewares=ipallowlist"
+      - "traefik.http.services.lidarr.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.lidarr.loadbalancer.server.scheme=http"
+
+  gluetun: #VPN for slskd only (phase 2): AirVPN WireGuard device "slskd" with a forwarded port
+    # The UDM "downloads-to-airvpn" route stays paused: it can't pass an inbound port to slskd.
+    profiles: ["discovery"]
+    image: qmcgaw/gluetun:v3.41.3
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.69 # slskd API/UI is reached here (shares this network namespace)
+    volumes:
+      - /mnt/user/appdata/gluetun:/gluetun
+    environment:
+      - TZ=${TZ}
+      - VPN_SERVICE_PROVIDER=airvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${AIRVPN_SLSKD_PRIVATE_KEY}
+      - WIREGUARD_PRESHARED_KEY=${AIRVPN_SLSKD_PRESHARED_KEY}
+      - WIREGUARD_ADDRESSES=${AIRVPN_SLSKD_ADDRESS} # IPv4 only
+      - SERVER_COUNTRIES=Switzerland
+      - FIREWALL_VPN_INPUT_PORTS=${AIRVPN_SLSKD_PORT} # AirVPN forwarded port -> Soulseek listen port
+      - FIREWALL_INPUT_PORTS=5030 # slskd web/API from the LAN (Traefik, musicflow, Lidarr)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=vlan-downloads"
+      - "traefik.http.routers.slskd.rule=Host(`soulseek.${DOMAIN}`)"
+      - "traefik.http.routers.slskd.entrypoints=websecure"
+      - "traefik.http.routers.slskd.middlewares=ipallowlist"
+      - "traefik.http.services.slskd.loadbalancer.server.port=5030"
+
+  slskd: #Soulseek client (phase 2), all traffic through gluetun
+    profiles: ["discovery"]
+    image: slskd/slskd:0.26.0
+    container_name: slskd
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    volumes:
+      - /mnt/user/appdata/slskd:/app
+      - /mnt/user/downloads/slskd:/app/downloads
+      - /mnt/user/plexmedia/music/library:/music/library:ro # shared back to the network (peers block leechers)
+    environment:
+      - TZ=${TZ}
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_SLSK_USERNAME=${SLSK_USERNAME}
+      - SLSKD_SLSK_PASSWORD=${SLSK_PASSWORD}
+      - SLSKD_SLSK_LISTEN_PORT=${AIRVPN_SLSKD_PORT}
+      - SLSKD_USERNAME=${SLSKD_WEB_USER}
+      - SLSKD_PASSWORD=${SLSKD_WEB_PASSWORD}
+      - SLSKD_API_KEY=${SLSKD_API_KEY}
+      - SLSKD_DOWNLOADS_DIR=/app/downloads
+      - SLSKD_SHARED_DIR=/music/library
+
   pinchflat: #youtube (curated playlists -> kids-youtube Plex library)
     image: ghcr.io/kieraneglin/pinchflat:latest
     container_name: pinchflat

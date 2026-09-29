@@ -7,11 +7,12 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `proxy.yaml` - Traefik reverse proxy
   - `core.yaml` - core infrastructure (Postgres, pgAdmin, dyndns, Cloudflare Tunnel)
   - `home.yaml` - Home Assistant
-  - `media.yaml` - Plex, *arr stack, Seerr, sabnzbd, Pinchflat
-  - `music.yaml` - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers)
+  - `media.yaml` - Plex, *arr stack (incl. Lidarr), Seerr, sabnzbd, Pinchflat; gluetun + slskd (dormant, see Music)
+  - `music.yaml` - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers); Navidrome; musicflow (dormant, see Music)
   - `ai.yaml` - local AI backends on the RTX GPU (Ollama, Whisper, Chatterbox, Kokoro)
   - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
   - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
+- `apps/` - small first-party services built by Komodo from this repo (`musicflow`)
 - `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update)
 - `appdata/` - config files to copy into `/mnt/user/appdata/`
 - `.local/` - private working notes (gitignored)
@@ -73,6 +74,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.10 / 192.168.60.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.13 - postgres  
+192.168.1.14 / 192.168.40.46 / 192.168.60.14 - Navidrome - listen.domain.com  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
@@ -90,3 +92,65 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.60.65 - Seerr (was Overseerr) - request.domain.com  
 192.168.60.66 - sabnzbd - usenet.domain.com  
 192.168.60.67 - Pinchflat (YouTube -> kids-youtube) - youtube.domain.com  
+192.168.60.68 - Lidarr - albums.domain.com  
+192.168.60.69 - gluetun + slskd (phase 2) - soulseek.domain.com  
+192.168.60.71 - musicflow (phase 2, no UI)  
+
+## Music
+Self-hosted replacement for Spotify discovery, with offline listening on Android. Status: **phase 1** (library + playback).
+Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Komodo doesn't start them.
+
+### How it works
+- Files: `/mnt/user/plexmedia/music/` -> `library/` (permanent), `inbox/<source>/` (auditioning), `playlists/` (`.nsp` smart playlists).
+- Navidrome serves everything. Users: `james` (Symfonium on Android, Feishin on Mac; linked to ListenBrainz) and
+  `house` (Music Assistant; no ListenBrainz). Stars, ratings and plays are per user, so household listening never
+  reaches recommendations or the inbox. Spotify stays shared and is never connected to ListenBrainz.
+- Lidarr (nightly + Tubifarry plugin) fills `library/` with albums via Prowlarr + sabnzbd (Usenet).
+- Phase 2 inbox: always `INBOX_SIZE` (50) unheard songs, about 3 hours: a day of commuting plus extra.
+  - Nightly 02:30 `musicflow ingest` counts unheard inbox tracks and adds only enough to get back to 50, taking
+    one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases and r/listentothis
+    (`inbox/<source>/`). It never goes past 50 and never re-offers anything it has tried before.
+  - Symfonium keeps the `Inbox` and `Starred` smart playlists downloaded.
+  - Nightly 22:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
+    rated 1 -> ListenBrainz hate, deleted; heard (a logged play) and not starred -> deleted 24h after the play.
+    Unheard songs are never deleted. It only ever deletes under `inbox/`.
+  - Skipping early doesn't log a play, so a skipped track stays in the inbox; rate it 1 to clear it.
+- slskd runs behind gluetun on its own AirVPN WireGuard device with a forwarded port (Soulseek needs inbound).
+  The UDM `downloads-to-airvpn` policy route stays paused: it can't pass an inbound port and would also
+  send Seerr's Cloudflare Tunnel through Switzerland.
+- Why these tools (Sept 2026): Navidrome + Symfonium is the only pairing with auto-updating offline playlists and
+  separate star/rating fields; Jellyfin has no track ratings, Plexamp downloads don't drop deleted tracks.
+  Explo (and SoulSync, DroppedNeedle) were considered, but none do the star-to-keep loop or respect a fixed inbox
+  size (Explo drops its whole weekly batch regardless), hence `apps/musicflow`, which also pulls Weekly Exploration.
+
+### Phase 1 setup
+1. `mkdir -p /mnt/user/plexmedia/music/{library,inbox,playlists} /mnt/user/downloads/slskd /mnt/user/appdata/{navidrome,lidarr}`,
+   `chown -R 1003:100` them; copy `appdata/music/playlists/Starred.nsp` into `/mnt/user/plexmedia/music/playlists/`.
+2. Add `NAVIDROME_USER` / `NAVIDROME_PASSWORD` to the server `.env`. Push; Komodo deploys Navidrome and Lidarr.
+3. UDM local DNS: `listen` and `albums` -> 192.168.1.2.
+4. Navidrome (listen.<domain>): create `james` first (admin; owns the smart playlists), then `house`.
+   Accounts: MusicBrainz + ListenBrainz; in Navidrome as `james`, Personal > ListenBrainz > link.
+5. Lidarr (albums.<domain>): root folder `/music/library`; download client sabnzbd (category `music`,
+   `/downloads/usenet`); add Lidarr as an app in Prowlarr. System > Plugins: install Tubifarry, then set its
+   metadata source to the community mirror (Lidarr's own metadata server is unreliable in 2026).
+6. Seed: add artists in Lidarr. For a track list, skim an Exportify CSV of Spotify likes first (shared account).
+7. Apps: Symfonium -> `https://listen.<domain>` as `james`, offline rule for playlist `Starred` (Wi-Fi only);
+   Feishin on the Mac; Music Assistant -> Subsonic provider `http://192.168.40.46:4533` as `house`.
+   Away from home: UDM WireGuard. Stars only in Symfonium/Feishin/Navidrome web (Music Assistant is the `house` user).
+
+### Phase 2: turn on discovery (after a few weeks of listening as `james`)
+1. AirVPN Client Area: Config Generator -> new device `slskd`, WireGuard; Ports -> add a port, assign to `slskd`.
+   Soulseek account: register by logging in once with any client. Fill the phase 2 vars in the server `.env`.
+2. `mkdir -p /mnt/user/appdata/{gluetun,slskd,musicflow}`, `chown` as above.
+3. Copy `appdata/music/playlists/Inbox.nsp` into the music `playlists/` folder; Symfonium offline rule for `Inbox`.
+4. Delete the `profiles: ["discovery"]` lines in `stacks/media.yaml` and `stacks/music.yaml`; push.
+   DNS: `soulseek` -> 192.168.1.2.
+5. Lidarr: Tubifarry Soulseek download client -> `http://192.168.60.69:5030` + `SLSKD_API_KEY`, path `/downloads/slskd`.
+6. `musicflow` starts with `DRY_RUN=true`: check `docker logs musicflow` after the first 22:00 run, or run
+   `docker exec musicflow python -m musicflow promote` by hand; then set `DRY_RUN=false` in `stacks/music.yaml`.
+   Other commands: `ingest all|fresh|listentothis`, `sync-loves`, `seed /config/liked.csv --limit 500`.
+7. Pin/upgrade deliberately: Lidarr nightly, slskd, gluetun and Navidrome are pinned so the 03:00
+   auto-update can't change them. yt-dlp inside musicflow self-updates daily (YouTube breaks it often).
+8. `musicflow` is built from `apps/musicflow` (`pull_policy: build`). A plain redeploy reuses the old image, so after
+   changing its code rebuild it (Komodo stack build/redeploy with build, or `docker compose build musicflow`).
+

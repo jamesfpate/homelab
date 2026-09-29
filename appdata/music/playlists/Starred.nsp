@@ -1,0 +1,7 @@
+{
+  "name": "Starred",
+  "comment": "Everything you starred. Symfonium keeps this offline.",
+  "all": [{ "is": { "loved": true } }],
+  "sort": "dateloved",
+  "order": "desc"
+}

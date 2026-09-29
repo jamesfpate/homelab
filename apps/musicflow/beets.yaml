@@ -1,0 +1,16 @@
+# Copied to /config/beets/config.yaml on first start; edit it there.
+directory: /music/library
+library: /config/beets/library.db
+plugins: musicbrainz chroma
+import:
+  move: yes
+  write: yes
+  quiet: yes
+  quiet_fallback: asis   # weak match -> keep existing tags instead of skipping
+  resume: no
+  incremental: no
+  log: /config/logs/beets-import.log
+paths:
+  default: $albumartist/$album%aunique{}/$track $title
+  singleton: $artist/%if{$album,$album,Singles}/$title
+  comp: Compilations/$album%aunique{}/$track $title
