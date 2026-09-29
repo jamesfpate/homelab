@@ -1,0 +1,8 @@
+# Times are container TZ (America/New_York).
+# Daily 22:00: star=keep, rate 1=dislike, heard+unstarred=delete. Unheard tracks are never deleted.
+0 22 * * * python -m musicflow promote
+# Daily 02:30: refill the inbox to INBOX_SIZE unheard tracks (Weekly Exploration, Fresh Releases, r/listentothis).
+30 2 * * * python -m musicflow ingest all
+# Daily: ListenBrainz loves for stars on library tracks; keep yt-dlp current.
+15 4 * * * python -m musicflow sync-loves
+45 4 * * * yt-dlp -U --quiet

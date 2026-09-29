@@ -1,0 +1,8 @@
+{
+  "name": "Inbox",
+  "comment": "Phase 2: unheard recommendations. Star to keep, rate 1 to dislike; heard and unstarred tracks are removed.",
+  "all": [{ "contains": { "filepath": "inbox/" } }],
+  "sort": "dateadded",
+  "order": "desc",
+  "limit": 500
+}
