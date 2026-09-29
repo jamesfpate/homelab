@@ -34,6 +34,8 @@ services:
       - /mnt/user/plexmedia/movies:/movies
       - /mnt/user/plexmedia/tv:/tv
       - /mnt/user/plexmedia/anime:/anime
+      - /mnt/user/plexmedia/kids-movies:/kids-movies
+      - /mnt/user/plexmedia/kids-tv:/kids-tv
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -89,6 +91,7 @@ services:
       - /mnt/user/appdata/sonarr:/config
       - /mnt/user/plexmedia/tv:/tv
       - /mnt/user/plexmedia/anime:/anime
+      - /mnt/user/plexmedia/kids-tv:/kids-tv
       - /mnt/user/downloads/usenet:/downloads/usenet
     environment:
       - TZ=${TZ}
@@ -116,6 +119,7 @@ services:
     volumes:
       - /mnt/user/appdata/radarr:/config
       - /mnt/user/plexmedia/movies:/movies
+      - /mnt/user/plexmedia/kids-movies:/kids-movies
       - /mnt/user/downloads/usenet:/downloads/usenet
     environment:
       - TZ=${TZ}
@@ -144,6 +148,8 @@ services:
       - /mnt/user/appdata/bazarr:/config
       - /mnt/user/plexmedia/tv:/tv
       - /mnt/user/plexmedia/movies:/movies
+      - /mnt/user/plexmedia/kids-tv:/kids-tv
+      - /mnt/user/plexmedia/kids-movies:/kids-movies
     environment:
       - TZ=${TZ}
       - PUID=${PUID}
