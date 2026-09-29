@@ -13,7 +13,8 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
   - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
   - `typing.yaml` - kids typing game (`apps/typing`, static page, internal only)
-- `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`)
+- `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`). "Deploy on push" only
+  redeploys a stack whose compose file changed, so an app-only change also needs a bump of the stack's `x-app-version`.
 - `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update)
 - `appdata/` - config files to copy into `/mnt/user/appdata/`
 - `.local/` - private working notes (gitignored)

@@ -4,8 +4,9 @@ networks:
     name: br0
 
 # Kids typing game: one static page (apps/typing/index.html) served by nginx. No network calls, LAN only.
-# The image is built from apps/typing on deploy (pull_policy: build). After changing the page, redeploy this
-# stack in Komodo so the image is rebuilt; a plain restart keeps the old image.
+# The image is built from apps/typing on deploy (pull_policy: build). Komodo's "Deploy on push" only redeploys
+# a stack whose compose file changed, so after changing apps/typing bump x-app-version below in the same commit.
+x-app-version: eb225b2
 services:
   typing:
     build: ../apps/typing
