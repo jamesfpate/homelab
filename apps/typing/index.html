@@ -49,6 +49,8 @@
   .chip.on { background: var(--accent); color: var(--accent-ink); }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .chips.nums .chip { width: 52px; padding: 8px 0; text-align: center; }
+  .speedbar { position: absolute; top: 12px; left: 0; right: 0; z-index: 2; }
+  .speedbar .chip { font-size: 26px; padding: 6px 14px; }
 
   /* free play */
   .big { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; animation: popin .45s cubic-bezier(.2,1.6,.4,1) both, floatout 2.8s 1.2s ease-in forwards; }
@@ -288,13 +290,27 @@ const free = {
   },
 };
 
+// Balloon speeds: seconds to rise the full screen, and how often a new one appears.
+const SPEEDS = [
+  { ico: "🐢", rise: [20, 26], every: 4500 },
+  { ico: "🚶", rise: [14, 18], every: 3200 },
+  { ico: "🐇", rise: [8, 11], every: 2000 },
+];
 const balloons = {
   start() {
     this.list = [];
-    stage.innerHTML = `<div class="press" style="top:18%">Pop the balloons! 🎈</div>`;
-    this.spawn(); this.timer = setInterval(() => this.spawn(), 2600);
+    stage.innerHTML = `<div class="chips speedbar">${SPEEDS.map((sp, i) => `<button class="chip" data-i="${i}">${sp.ico}</button>`).join("")}</div>
+      <div class="press" style="top:22%">Pop the balloons! 🎈</div>`;
+    stage.querySelectorAll(".speedbar .chip").forEach(btn => btn.onclick = () => { btn.blur(); this.setSpeed(+btn.dataset.i); });
+    this.setSpeed(store.get("speed", 1));
+    this.spawn();
   },
   stop() { clearInterval(this.timer); },
+  setSpeed(i) {
+    this.speed = SPEEDS[i] ? i : 1; store.set("speed", this.speed);
+    stage.querySelectorAll(".speedbar .chip").forEach(b => b.classList.toggle("on", +b.dataset.i === this.speed));
+    clearInterval(this.timer); this.timer = setInterval(() => this.spawn(), SPEEDS[this.speed].every);
+  },
   spawn() {
     this.list = this.list.filter(b => b.el.isConnected);
     if (this.list.length >= 3) return;
@@ -305,7 +321,7 @@ const balloons = {
     const c = pick(COLORS);
     el.style.background = c; el.style.borderBottomColor = c;
     el.style.left = `min(${rand(3, 85)}vw, calc(100vw - 140px))`;
-    el.style.animationDuration = rand(11, 15) + "s";
+    el.style.animationDuration = rand(...SPEEDS[this.speed].rise) + "s";
     el.addEventListener("animationend", e => { if (e.animationName === "rise") el.remove(); });
     stage.appendChild(el);
     this.list.push({ letter, el });
