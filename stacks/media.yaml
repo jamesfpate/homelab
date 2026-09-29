@@ -36,6 +36,7 @@ services:
       - /mnt/user/plexmedia/anime:/anime
       - /mnt/user/plexmedia/kids-movies:/kids-movies
       - /mnt/user/plexmedia/kids-tv:/kids-tv
+      - /mnt/user/plexmedia/kids-youtube:/kids-youtube
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -217,6 +218,32 @@ services:
       - "traefik.http.services.sabnzbd.loadbalancer.passHostHeader=true"
       - "traefik.http.services.sabnzbd.loadbalancer.server.scheme=http"
   
+  pinchflat: #youtube (curated playlists -> kids-youtube Plex library)
+    image: ghcr.io/kieraneglin/pinchflat:latest
+    container_name: pinchflat
+    restart: unless-stopped
+    user: "${PUID}:${PGID}" # not recommended to run as root; host dirs must be owned by this uid
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.67
+    ports:
+      - "8945:8945"  # Pinchflat web interface
+    volumes:
+      - /mnt/user/appdata/pinchflat:/config
+      - /mnt/user/plexmedia/kids-youtube:/downloads
+    environment:
+      - TZ=${TZ}
+      - UMASK=000 # Unraid-friendly perms on downloaded files
+      - LOG_LEVEL=info
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pinchflat.rule=Host(`youtube.${DOMAIN}`)"
+      - "traefik.http.routers.pinchflat.entrypoints=websecure"
+      - "traefik.http.routers.pinchflat.middlewares=ipallowlist"
+      - "traefik.http.services.pinchflat.loadbalancer.server.port=8945"
+      - "traefik.http.services.pinchflat.loadbalancer.passHostHeader=true"
+      - "traefik.http.services.pinchflat.loadbalancer.server.scheme=http"
+
   #qbittorrent:
   #  image: linuxserver/qbittorrent:latest
   #  container_name: qbittorrent

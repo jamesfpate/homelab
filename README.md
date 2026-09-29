@@ -7,7 +7,7 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `proxy.yaml` - Traefik reverse proxy
   - `core.yaml` - core infrastructure (Postgres, pgAdmin, dyndns, Cloudflare Tunnel)
   - `home.yaml` - Home Assistant
-  - `media.yaml` - Plex, *arr stack, Seerr, sabnzbd
+  - `media.yaml` - Plex, *arr stack, Seerr, sabnzbd, Pinchflat
   - `music.yaml` - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers)
   - `ai.yaml` - local AI backends on the RTX GPU (Ollama, Whisper, Chatterbox, Kokoro)
   - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
@@ -89,3 +89,4 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.60.64 - Bazarr - subtitles.domain.com  
 192.168.60.65 - Seerr (was Overseerr) - request.domain.com  
 192.168.60.66 - sabnzbd - usenet.domain.com  
+192.168.60.67 - Pinchflat (YouTube -> kids-youtube) - youtube.domain.com  
