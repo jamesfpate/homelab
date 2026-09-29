@@ -1,5 +1,39 @@
+# Homelab
+Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks deployed by Komodo, routed by Traefik.
+
+## Layout
+- `compose/infra.yaml` - Komodo v2 (core + periphery, FerretDB/Postgres backend). The only stack run by Unraid's Compose Manager.
+- `stacks/` - service stacks, declared in `komodo/resources.toml` and deployed by Komodo's Resource Sync:
+  - `proxy.yaml` - Traefik reverse proxy
+  - `core.yaml` - core infrastructure (Postgres, pgAdmin, dyndns, Cloudflare Tunnel)
+  - `home.yaml` - Home Assistant
+  - `media.yaml` - Plex, *arr stack, Seerr, sabnzbd
+  - `music.yaml` - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers)
+  - `ai.yaml` - local AI backends on the RTX GPU (Ollama, Whisper, Chatterbox, Kokoro)
+  - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
+  - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
+- `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update)
+- `appdata/` - config files to copy into `/mnt/user/appdata/`
+- `.local/` - private working notes (gitignored)
+
+Validate a stack: `docker compose -f stacks/<stack>.yaml config`
+
+## Conventions
+- Networks: macvlan per VLAN, created once by `scripts/create-networks.sh` and `external` in every stack:
+  - 192.168.1.x - Private/management (br0)
+  - 192.168.20.x - Public services (br0.20)
+  - 192.168.40.x - IoT (br0.40)
+  - 192.168.60.x - Downloads/media (br0.60)
+  - 192.168.70.x - Cameras (br0.70; UniFi Protect only, no Docker network)
+- Container IPs are static (see Services below).
+- HTTP services are routed via Traefik labels as `<service>.<domain>`; Traefik handles TLS (wildcard cert, Cloudflare DNS-01; needs `CF_API_EMAIL` and `CF_DNS_API_TOKEN`) and the LAN IP allowlist.
+- Secrets/env live only in `/mnt/user/appdata/env/.env` on the server, never in the repo. Compose files assume Unraid paths; app data lives in `/mnt/user/appdata/<service>/`.
+- Pin versions via image tags; databases stay on a fixed major.
+- Unraid's `/etc` is RAM-backed, so Komodo's keys, backups and periphery root live under `/mnt/user/appdata/komodo/`.
+- GPUs: Intel iGPU for Plex transcoding; NVIDIA RTX PRO 4000 Blackwell (24 GB, Unraid Nvidia Driver plugin, open kernel module) for the ai stack via `runtime: nvidia`.
+- Camera person detection is done by UniFi Protect on the UDM SE and surfaced in Home Assistant via the UniFi Protect integration.
+
 ## Server Setup
-Setup for unraid homelab
 
 ### Unraid file/folder setup
 - Create folders in appdata for each service. add any appdata files from repo to the appdata folder.
@@ -28,7 +62,7 @@ Setup for unraid homelab
 - If casting to the Onkyo wakes the TV: LG SIMPLINK Auto Power Sync off (keeps ARC/volume control).
 
 ## Hosts & devices
-192.168.1.1 - UniFi Dream Machine Pro (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  
+192.168.1.1 - UniFi Dream Machine SE (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  
 192.168.1.41 - KVM (remote console for the Unraid server)  
 192.168.1.42 - Unraid server (iris) - unraid.domain.com  
 
