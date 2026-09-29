@@ -132,6 +132,7 @@ const store = {
   set(k, v) { try { localStorage.setItem("typing." + k, JSON.stringify(v)); } catch {} },
 };
 // Timers owned by the active mode; cancelled on every mode switch so nothing fires onto the next screen.
+const HINT_MS = 10000;   // unanswered for this long -> show the answer
 const timers = new Set();
 function later(fn, ms) { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; }
 function clearTimers() { timers.forEach(clearTimeout); timers.clear(); }
@@ -338,7 +339,15 @@ const words = {
     this.pos = 0; this.busy = false;
     stage.innerHTML = `<div class="wrap" style="gap:30px"><div class="wordpic">${this.emoji}</div><div class="tilesrow">${
       [...this.word].map(c => `<div class="lt">${c}</div>`).join("")}</div></div>`;
-    this.mark(); say(this.word.toLowerCase());
+    this.mark(); say(this.word.toLowerCase()); this.nudge();
+  },
+  nudge() {   // after HINT_MS with no progress, point at the next letter
+    clearTimeout(this.idle);
+    this.idle = later(() => {
+      const tile = stage.querySelectorAll(".lt")[this.pos]; if (!tile || this.busy) return;
+      tile.classList.remove("wiggle"); void tile.offsetWidth; tile.classList.add("wiggle");
+      say(`Press ${this.word[this.pos]}`); this.nudge();
+    }, HINT_MS);
   },
   mark() {
     stage.querySelectorAll(".lt").forEach((t, i) => {
@@ -358,7 +367,7 @@ const words = {
     }
     tone(PENTA[this.pos + 3], 0.3); sayChar(k);
     burst(...centre(tile), 10);
-    this.pos++; this.mark();
+    this.pos++; this.mark(); this.nudge();
     if (this.pos === this.word.length) {
       this.busy = true; addStar();
       later(() => { $(".wordpic").classList.add("dance"); celebrate(); say(`${this.word.toLowerCase()}! Great job!`); }, 350);
@@ -381,9 +390,20 @@ function quiz(cfg) {
         <div class="equation"><span>${this.a}</span><span>${this.sym}</span><span>${this.b}</span><span>=</span><span class="answer">&nbsp;</span></div></div>`;
       stage.querySelectorAll(".chip").forEach(btn => btn.onclick = () => { btn.blur(); cfg.pick.call(this, btn.dataset); this.next(); });
       cfg.after?.call(this);
+      this.revealed = false;
+      later(() => this.reveal(), HINT_MS);
       say(this.spoken());
     },
     spoken() { return `${this.a} ${this.word} ${this.b}`; },
+    // Hint: the answer shows faintly in the box (plus the mode's own picture hint) and is spoken digit by digit.
+    reveal() {
+      if (this.busy || this.revealed) return;
+      this.revealed = true;
+      cfg.hint?.call(this);
+      const box = $(".answer");
+      if (!this.input) box.innerHTML = `<span class="ghost">${this.ans}</span>`;
+      say(`${this.spoken()} is ${this.ans}. Type ${[...String(this.ans)].join(", ")}!`);
+    },
     key(k) {
       if (this.busy) return;
       if (k === "Enter") { this.next(); return; }
@@ -400,8 +420,8 @@ function quiz(cfg) {
       } else {
         this.wrong++; boop();
         box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
-        later(() => { this.input = ""; box.innerHTML = "&nbsp;"; if (this.wrong >= 2) cfg.hint.call(this, box); }, 400);
-        say(this.wrong >= 2 ? cfg.hintSpoken.call(this) : "Try again!");
+        later(() => { this.input = ""; box.innerHTML = "&nbsp;"; if (this.wrong >= 2) this.reveal(); }, 400);
+        if (this.wrong < 2) say("Try again!");
       }
     },
   };
@@ -414,7 +434,6 @@ const mathBase = {
   controls: levelChips,
   pick(d) { this.level = +d.level; store.set("level", this.level); this.last = null; },
   hint() { showCounts(); },
-  hintSpoken() { return "Let's count them!"; },
   correct() { showCounts(); },
 };
 // avoid handing out the identical problem twice in a row
@@ -448,8 +467,6 @@ const tables = quiz({
     const dots = range(1, this.b).map(r => range(1, this.a).map(c => `<span class="d" style="background:${COLORS[(r - 1) % COLORS.length]};animation-delay:${((r - 1) * this.a + c) * 0.02}s"></span>`).join("")).join("");
     return `<div class="grid" style="grid-template-columns:repeat(${this.a},auto)">${dots}</div>`;
   },
-  hint(box) { box.innerHTML = `<span class="ghost">${this.ans}</span>`; },
-  hintSpoken() { return `${this.spoken()} is ${this.ans}. Type ${[...String(this.ans)].join(", ")}!`; },
   correct() { if (this.i === 10) return `You did the whole ${this.n} times table! Now the ${this.n % TABLES_MAX + 1}s!`; },
 });
 
