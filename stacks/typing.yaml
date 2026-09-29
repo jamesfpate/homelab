@@ -2,11 +2,14 @@ networks:
   vlan-private:
     external: true
     name: br0
+  voice: # created by stacks/ai.yaml; nginx proxies /tts/ to Chatterbox by name
+    external: true
 
-# Kids typing game: one static page (apps/typing/index.html) served by nginx. No network calls, LAN only.
+# Kids typing game: one static page (apps/typing/index.html) served by nginx, LAN only. Speech comes from
+# Chatterbox on the ai stack (nginx proxies /tts/ -> chatterbox:8004), with the browser voice as fallback.
 # The image is built from apps/typing on deploy (pull_policy: build). Komodo's "Deploy on push" only redeploys
 # a stack whose compose file changed, so after changing apps/typing bump x-app-version below in the same commit.
-x-app-version: eb225b2
+x-app-version: 2a22637
 services:
   typing:
     build: ../apps/typing
@@ -17,6 +20,7 @@ services:
     networks:
       vlan-private:
         ipv4_address: 192.168.1.26
+      voice:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.typing.rule=Host(`type.${DOMAIN}`)"

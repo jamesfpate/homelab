@@ -178,21 +178,73 @@ const popSound = () => { tone(900, 0.08, "square", 0.08); tone(500, 0.12, "sine"
 const boop = () => tone(180, 0.15, "sine", 0.1);
 const tada = () => [523.3, 659.3, 784, 1046.5].forEach((f, i) => tone(f, 0.3, "triangle", 0.16, i * 0.11));
 
+/* ---------- speech ----------
+   Chatterbox on the homelab (same-origin /tts/ proxy in nginx), cached per phrase in the Cache API so anything
+   heard once plays instantly. If it fails or is slow, that phrase uses the browser's voice instead. */
+const TTS = { url: "/tts/v1/audio/speech", body: { model: "chatterbox-turbo", voice: "Jade.wav", response_format: "mp3", speed: 0.9 }, timeout: 4000, cache: "typing-tts-v1" };
 let voice = null;
 function loadVoice() {
   const vs = speechSynthesis.getVoices().filter(v => v.lang && v.lang.startsWith("en"));
   voice = vs.find(v => /samantha|google us english|karen|moira|tessa/i.test(v.name)) || vs[0] || null;
 }
 if ("speechSynthesis" in window) { loadVoice(); speechSynthesis.onvoiceschanged = loadVoice; }
-function say(text, { interrupt = true, rate = 0.85 } = {}) {
-  if (!soundOn || !("speechSynthesis" in window)) return;
-  if (interrupt) speechSynthesis.cancel();
+function sayBrowser(text, rate) {
+  if (!("speechSynthesis" in window)) return;
   const u = new SpeechSynthesisUtterance(text);
   if (voice) u.voice = voice;
   u.rate = rate; u.pitch = 1.15;
   speechSynthesis.speak(u);
 }
-const hush = () => window.speechSynthesis?.cancel();
+const player = new Audio();          // one element, unlocked by the first key/tap so iOS lets later plays through
+let unlocked = false;
+function unlockAudio() {
+  if (unlocked) return; unlocked = true;
+  player.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+  player.play().catch(() => {});
+}
+const clips = new Map();             // text -> object URL for this session
+let ttsDownUntil = 0;
+async function fetchClip(text) {
+  if (clips.has(text)) return clips.get(text);
+  const key = "/tts-cache/" + encodeURIComponent(text);
+  let blob = null;
+  const store = "caches" in window ? await caches.open(TTS.cache).catch(() => null) : null;
+  const hit = store && await store.match(key);
+  if (hit) blob = await hit.blob();
+  else {
+    if (Date.now() < ttsDownUntil) throw new Error("tts down");
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), TTS.timeout);
+    try {
+      const r = await fetch(TTS.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...TTS.body, input: text }), signal: ctl.signal });
+      if (!r.ok) throw new Error("tts " + r.status);
+      blob = await r.blob();
+      if (!blob.type.startsWith("audio")) throw new Error("tts not audio");
+    } catch (e) { ttsDownUntil = Date.now() + 30000; throw e; }   // don't keep waiting on every phrase
+    finally { clearTimeout(timer); }
+    store?.put(key, new Response(blob, { headers: { "Content-Type": blob.type } })).catch(() => {});
+  }
+  const url = URL.createObjectURL(blob); clips.set(text, url); return url;
+}
+let sayId = 0, queue = [];
+function playNext() {
+  const next = queue.shift(); if (!next) return;
+  player.src = next; player.onended = playNext; player.play().catch(playNext);
+}
+function say(text, { interrupt = true, rate = 0.85 } = {}) {
+  if (!soundOn) return;
+  const id = interrupt ? ++sayId : sayId;
+  if (interrupt) hush();
+  fetchClip(text).then(url => {
+    if (id !== sayId) return;                       // superseded while fetching
+    if (interrupt || player.paused || player.ended) { queue = [url]; playNext(); } else queue.push(url);
+  }).catch(() => { if (id === sayId) sayBrowser(text, rate); });
+}
+function hush() { window.speechSynthesis?.cancel(); queue = []; player.onended = null; if (!player.paused) player.pause(); }
+// Warm the cache with what he'll hear most, one phrase at a time in the background.
+function warmCache() {
+  const phrases = [...Object.keys(ABC), ...Object.values(ABC).map(v => v[1]), ...NUMWORDS, "Try again!", "Great job!"];
+  (async () => { for (const t of phrases) { if (Date.now() < ttsDownUntil) return; await fetchClip(t).catch(() => {}); await new Promise(r => setTimeout(r, 150)); } })();
+}
 const sayChar = ch => say(/\d/.test(ch) ? NUMWORDS[+ch] : ch);
 
 /* ---------- effects ---------- */
@@ -506,12 +558,14 @@ function switchTo(id) {
   current = m.m; audio(); current.start();
 }
 $("#tablist").innerHTML = MODES.map(m => `<button class="tab" data-id="${m.id}"><span class="ico">${m.ico}</span><span class="lbl">${m.name}</span></button>`).join("");
-document.querySelectorAll(".tab").forEach(t => t.onclick = () => { t.blur(); switchTo(t.dataset.id); });
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { t.blur(); unlockAudio(); switchTo(t.dataset.id); });
+addEventListener("pointerdown", unlockAudio, { once: true });
 
 /* ---------- input ---------- */
 addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   e.preventDefault();
+  unlockAudio();
   if (e.repeat || !current) return;
   current.key(e.key.length === 1 ? e.key.toUpperCase() : e.key);
 });
@@ -522,6 +576,7 @@ if (!document.documentElement.requestFullscreen) $("#fsBtn").hidden = true;   //
 $("#fsBtn").onclick = e => { e.currentTarget.blur(); if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().then(() => navigator.keyboard?.lock?.(["Escape"])).catch(() => {}); };
 
 renderSound(); renderStars(); switchTo(store.get("tab", "free"));
+if (location.protocol.startsWith("http")) warmCache();
 </script>
 </body>
 </html>
