@@ -12,7 +12,8 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `ai.yaml` - local AI backends on the RTX GPU (Ollama, Whisper, Chatterbox, Kokoro)
   - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
   - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
-- `apps/` - small first-party services built by Komodo from this repo (`musicflow`)
+  - `typing.yaml` - kids typing game (`apps/typing`, static page, internal only)
+- `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`)
 - `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update)
 - `appdata/` - config files to copy into `/mnt/user/appdata/`
 - `.local/` - private working notes (gitignored)
@@ -76,6 +77,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.13 - postgres  
 192.168.1.14 / 192.168.40.46 / 192.168.60.14 - Navidrome - listen.domain.com  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
+192.168.1.26 - typing (kids typing game, internal only) - type.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  

@@ -1,0 +1,24 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+
+# Kids typing game: one static page (apps/typing/index.html) served by nginx. No network calls, LAN only.
+# The image is built from apps/typing on deploy (pull_policy: build). After changing the page, redeploy this
+# stack in Komodo so the image is rebuilt; a plain restart keeps the old image.
+services:
+  typing:
+    build: ../apps/typing
+    image: typing:local
+    pull_policy: build
+    container_name: typing
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.26
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.typing.rule=Host(`type.${DOMAIN}`)"
+      - "traefik.http.routers.typing.entrypoints=websecure"
+      - "traefik.http.routers.typing.middlewares=ipallowlist"
+      - "traefik.http.services.typing.loadbalancer.server.port=80"
