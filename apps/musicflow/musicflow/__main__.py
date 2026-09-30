@@ -5,6 +5,7 @@
   python -m musicflow sync-loves              ListenBrainz loves for starred library tracks
   python -m musicflow seed FILE.csv [--limit N] [--allow-youtube]
   python -m musicflow report                  rewrite the dashboard (/config/www) from the event history
+  python -m musicflow wants                   starred albums -> Lidarr (add + search)
 
 DRY_RUN=true (the default) logs every decision and changes nothing.
 """
@@ -12,7 +13,7 @@ DRY_RUN=true (the default) logs every decision and changes nothing.
 import argparse
 from pathlib import Path
 
-from . import config, ingest, promote, report, seed
+from . import config, ingest, promote, report, seed, wants
 from .sources import SOURCES
 from .util import setup_logging
 
@@ -24,6 +25,7 @@ def main() -> None:
     sub.add_parser("promote")
     sub.add_parser("sync-loves")
     sub.add_parser("report")
+    sub.add_parser("wants")
     ing = sub.add_parser("ingest")
     ing.add_argument("source", choices=["all", *SOURCES])
     sd = sub.add_parser("seed")
@@ -43,6 +45,8 @@ def main() -> None:
         seed.run(cfg, args.csv, args.limit, args.allow_youtube)
     elif args.cmd == "report":
         report.run(cfg)
+    elif args.cmd == "wants":
+        wants.run(cfg)
 
 
 if __name__ == "__main__":

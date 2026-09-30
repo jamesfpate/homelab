@@ -155,6 +155,8 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
    Other commands: `ingest all|exploration|fresh|r/<subreddit>`, `sync-loves`, `seed /config/liked.csv --limit 500`.
    Local LLM (Ollama, `OLLAMA_URL`): parses Reddit titles and scores every candidate 0–10 for taste. `LLM_FILTER=false`
    is shadow mode (scores logged + on the dashboard, nothing skipped); flip to true once the score predicts keeps.
+   Album stars: star an album in Navidrome/Symfonium/Feishin and `musicflow wants` (every 30 min) adds it to Lidarr
+   and starts a search; the dashboard lists them under "Wanted albums".
    Provenance: each inbox file gets a comment tag `musicflow: <source> <date>`, Navidrome gets an `Inbox - <source>`
    smart playlist per source, and every add/keep/dislike/drop is logged to `/config/musicflow.db`, which feeds the
    dashboard at inbox.<domain> (`musicflow-web`; copy `appdata/musicflow/nginx.conf` to `/mnt/user/appdata/musicflow/`).

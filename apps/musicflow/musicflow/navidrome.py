@@ -27,6 +27,14 @@ class Song:
     played: datetime | None = None
 
 
+@dataclass
+class StarredAlbum:
+    id: str
+    name: str
+    artist: str
+    mbid: str
+
+
 def _dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00")) if value else None
 
@@ -74,6 +82,14 @@ class Navidrome:
             if len(batch) < page:
                 return songs
             offset += page
+
+    def starred_albums(self) -> list["StarredAlbum"]:
+        albums = self._call("getStarred2").get("starred2", {}).get("album", [])
+        return [StarredAlbum(a["id"], a.get("name", ""), a.get("artist", ""), a.get("musicBrainzId", "")) for a in albums]
+
+    def album_paths(self, album_id: str) -> list[Path]:
+        songs = self._call("getAlbum", id=album_id).get("album", {}).get("song", [])
+        return [Path(s["path"]) for s in songs if s.get("path")]
 
     def star(self, song_id: str) -> None:
         self._call("star", id=song_id)

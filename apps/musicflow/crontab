@@ -3,6 +3,8 @@
 0 22 * * * python -m musicflow promote
 # Daily 02:30: refill the inbox to INBOX_SIZE unheard tracks (Weekly Exploration, Fresh Releases, each subreddit in SUBREDDITS).
 30 2 * * * python -m musicflow ingest all
+# Every 30 min: albums starred in Navidrome/Symfonium/Feishin -> Lidarr (add + search).
+*/30 * * * * python -m musicflow wants
 # Daily: ListenBrainz loves for stars on library tracks; keep yt-dlp current.
 15 4 * * * python -m musicflow sync-loves
 45 4 * * * yt-dlp -U --quiet

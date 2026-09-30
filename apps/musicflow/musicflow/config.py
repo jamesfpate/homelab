@@ -43,6 +43,8 @@ class Config:
     ollama_timeout_s: int
     llm_filter: bool
     llm_min_score: int
+    lidarr_url: str
+    lidarr_api_key: str
     download_timeout_s: int
 
 
@@ -74,5 +76,7 @@ def load() -> Config:
         ollama_timeout_s=int(_env("OLLAMA_TIMEOUT_S", "300")),
         llm_filter=_bool("LLM_FILTER", False),  # false = shadow mode: score and log, never skip
         llm_min_score=int(_env("LLM_MIN_SCORE", "5")),
+        lidarr_url=_env("LIDARR_URL", "").rstrip("/"),  # album stars -> Lidarr (wants)
+        lidarr_api_key=_env("LIDARR_API_KEY", ""),
         download_timeout_s=int(_env("DOWNLOAD_TIMEOUT_MIN", "20")) * 60,
     )

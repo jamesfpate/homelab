@@ -67,6 +67,15 @@ def record_scores(cfg: Config, batch: str, rows: list[tuple[str, str, str, int, 
                         [(ts, batch, *r) for r in rows])
 
 
+def wanted_keys(cfg: Config) -> set[tuple[str, str]]:
+    """(artist, album) pairs already handed to Lidarr, normalised."""
+    from .util import norm
+
+    with connect(cfg) as con:
+        return {(norm(r["artist"]), norm(r["album"])) for r in con.execute(
+            "select artist, album from events where action='wanted' or (action='not_found' and source='album star')")}
+
+
 def decided_artists(cfg: Config) -> dict[str, list[str]]:
     """Artists the listener kept / disliked from earlier inbox rounds (most recent first, deduplicated)."""
     out = {"kept": [], "disliked": []}

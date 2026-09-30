@@ -104,6 +104,8 @@ services:
       - OLLAMA_URL=http://192.168.1.52:11434 # local LLM: parses Reddit titles, scores candidates for taste
       - OLLAMA_MODEL=gemma4:26b-a4b-it-qat
       - LLM_FILTER=false # shadow: scores are logged and shown on the dashboard but don't change what is fetched
+      - LIDARR_URL=http://192.168.60.68:8686 # album stars -> Lidarr every 30 min
+      - LIDARR_API_KEY=${LIDARR_API_KEY}
       - DRY_RUN=true # flip to false after checking the first run's log
 
   musicflow-web: # dashboard: inbox by source, keep rate per source, activity (inbox.<domain>)

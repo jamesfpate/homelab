@@ -59,6 +59,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
     sources = sorted(set(all_time) | set(inbox), key=lambda s: -(all_time[s]["added"] + inbox[s]))
     recent = con.execute("select * from events order by id desc limit 150").fetchall()
     kept = con.execute("select * from events where action='kept' order by id desc limit 200").fetchall()
+    wanted = con.execute("select * from events where action='wanted' order by id desc limit 50").fetchall()
 
     def rate(c: Counter) -> float | None:
         decided = c["kept"] + c["disliked"] + c["heard"]
@@ -94,7 +95,8 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
     def ev_rows(rows) -> str:
         out = []
         for r in rows:
-            what = f"{r['artist']} - {r['title']}" if r["title"] else (r["album"] or r["path"] or "")
+            what = f"{r['artist']} - {r['album']}" if r["action"] == "wanted" else (
+                f"{r['artist']} - {r['title']}" if r["title"] else (r["album"] or r["path"] or ""))
             out.append(
                 f"<tr><td class=ts>{e(r['ts'].replace('T', ' '))}</td><td><span class='tag {e(r['action'])}'>{e(r['action'])}</span></td>"
                 f"<td>{e(r['source'] or '')}</td><td>{e(what)}</td></tr>"
@@ -160,6 +162,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
   .tag {{ font-size:12px; padding:1px 7px; border-radius:10px; border:1px solid var(--line); color:var(--ink2); }}
   .tag.kept {{ color:var(--good); border-color:var(--good); }} .tag.disliked {{ color:var(--critical); border-color:var(--critical); }}
   .tag.heard, .tag.stale {{ color:var(--serious); border-color:var(--serious); }} .tag.not_found {{ color:var(--muted); }}
+  .tag.wanted {{ color:var(--series); border-color:var(--series); }}
   .wrap {{ overflow-x:auto; }}
 </style></head><body><main>
 <h1>Music Inbox</h1>
@@ -178,6 +181,8 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
 <h2>Sources, all time</h2>
 <div class="wrap"><table><tr><th>Source</th><th class=n>Inbox now</th><th class=n>Added</th><th class=n>Kept</th><th class=n>Disliked</th><th class=n>Heard, dropped</th><th class=n>Not found</th><th class=n>Keep rate</th></tr>{score_rows(all_time)}</table></div>
 {llm_section}
+<h2>Wanted albums (album stars → Lidarr)</h2>
+<div class="wrap"><table><tr><th>When</th><th></th><th>Via</th><th>Album</th></tr>{ev_rows(wanted)}</table></div>
 <h2>Kept</h2>
 <div class="wrap"><table><tr><th>When</th><th></th><th>Source</th><th>Track</th></tr>{ev_rows(kept)}</table></div>
 <h2>Recent activity</h2>
