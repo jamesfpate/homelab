@@ -1,3 +1,4 @@
 .env
 # private working notes (not committed)
 .local/
+__pycache__/

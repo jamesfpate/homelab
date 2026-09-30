@@ -98,4 +98,5 @@ services:
       - SLSKD_URL=http://192.168.60.69:5030
       - SLSKD_API_KEY=${SLSKD_API_KEY}
       - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
+      - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,shoegaze # top-of-week posts titled 'Artist - Title'
       - DRY_RUN=true # flip to false after checking the first run's log

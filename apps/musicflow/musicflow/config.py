@@ -37,7 +37,7 @@ class Config:
     fresh_days: int
     fresh_max_releases: int
     fresh_types: tuple[str, ...]
-    listentothis_limit: int
+    reddit_limit: int
     download_timeout_s: int
 
 
@@ -63,6 +63,6 @@ def load() -> Config:
         fresh_days=int(_env("FRESH_DAYS", "7")),
         fresh_max_releases=int(_env("FRESH_MAX_RELEASES", "10")),
         fresh_types=tuple(t.strip().lower() for t in _env("FRESH_TYPES", "album,ep,single").split(",")),
-        listentothis_limit=int(_env("LISTENTOTHIS_LIMIT", "50")),
+        reddit_limit=int(_env("REDDIT_LIMIT", _env("LISTENTOTHIS_LIMIT", "50"))),  # per subreddit
         download_timeout_s=int(_env("DOWNLOAD_TIMEOUT_MIN", "20")) * 60,
     )

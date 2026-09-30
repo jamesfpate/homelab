@@ -1,7 +1,7 @@
 """musicflow CLI.
 
   python -m musicflow promote                 weekly star/dislike/expire pass over the inbox
-  python -m musicflow ingest all|fresh|listentothis
+  python -m musicflow ingest all|exploration|fresh|r/<subreddit>
   python -m musicflow sync-loves              ListenBrainz loves for starred library tracks
   python -m musicflow seed FILE.csv [--limit N] [--allow-youtube]
 

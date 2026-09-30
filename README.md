@@ -111,7 +111,7 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - Lidarr (nightly + Tubifarry plugin) fills `library/` with albums via Prowlarr + sabnzbd (Usenet).
 - Phase 2 inbox: always `INBOX_SIZE` (50) unheard songs, about 3 hours: a day of commuting plus extra.
   - Nightly 02:30 `musicflow ingest` counts unheard inbox tracks and adds only enough to get back to 50, taking
-    one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases and r/listentothis
+    one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases and each subreddit in `SUBREDDITS`
     (`inbox/<source>/`). It never goes past 50 and never re-offers anything it has tried before.
   - Symfonium keeps the `Inbox` and `Starred` smart playlists downloaded.
   - Nightly 22:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
@@ -151,7 +151,7 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 5. Lidarr: Tubifarry Soulseek download client -> `http://192.168.60.69:5030` + `SLSKD_API_KEY`, path `/downloads/slskd`.
 6. `musicflow` starts with `DRY_RUN=true`: check `docker logs musicflow` after the first 22:00 run, or run
    `docker exec musicflow python -m musicflow promote` by hand; then set `DRY_RUN=false` in `stacks/music.yaml`.
-   Other commands: `ingest all|fresh|listentothis`, `sync-loves`, `seed /config/liked.csv --limit 500`.
+   Other commands: `ingest all|exploration|fresh|r/<subreddit>`, `sync-loves`, `seed /config/liked.csv --limit 500`.
 7. Pin/upgrade deliberately: Lidarr nightly, slskd, gluetun and Navidrome are pinned so the 03:00
    auto-update can't change them. yt-dlp inside musicflow self-updates daily (YouTube breaks it often).
 8. `musicflow` is built from `apps/musicflow` (`pull_policy: build`). A plain redeploy reuses the old image, so after
