@@ -113,10 +113,12 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - Phase 2 inbox: always `INBOX_SIZE` (50) unheard songs, about 3 hours: a day of commuting plus extra.
   - Nightly 02:30 `musicflow ingest` counts unheard inbox tracks and adds only enough to get back to 50, taking
     one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases and each subreddit in `SUBREDDITS`
+    (all-time top 100, then month, then week: `REDDIT_WINDOWS`)
     (`inbox/<source>/`). It never goes past 50 and never re-offers anything it has tried before.
   - Symfonium keeps the `Inbox` and `Starred` smart playlists downloaded.
   - Nightly 22:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
-    rated 1 -> ListenBrainz hate, deleted; heard (a logged play) and not starred -> deleted 24h after the play.
+    rated 1 -> ListenBrainz hate, deleted; heard (a logged play) and not starred -> deleted at the next promote
+    (`PLAYED_GRACE_HOURS=0`; a logged play needs about half the track, so quick skips stay unheard).
     Unheard songs are never deleted. It only ever deletes under `inbox/`.
   - Skipping early doesn't log a play, so a skipped track stays in the inbox; rate it 1 to clear it.
 - slskd runs behind gluetun on its own AirVPN WireGuard device with a forwarded port (Soulseek needs inbound).

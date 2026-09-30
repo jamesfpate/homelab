@@ -70,14 +70,14 @@ _REDDIT_GAP_S = 10  # anonymous RSS is rate-limited; space the subreddit fetches
 _last_reddit_call = 0.0
 
 
-def _reddit_rss(sub: str) -> bytes:
+def _reddit_rss(sub: str, window: str) -> bytes:
     global _last_reddit_call
     for attempt in range(4):
         time.sleep(max(0.0, _last_reddit_call + _REDDIT_GAP_S - time.monotonic()))
         _last_reddit_call = time.monotonic()
         r = requests.get(
             f"https://www.reddit.com/r/{sub}/top/.rss",
-            params={"t": "week", "limit": 50},
+            params={"t": window, "limit": 100},
             headers={"User-Agent": "musicflow/1.0 (homelab music discovery)"},
             timeout=30,
         )
@@ -94,9 +94,15 @@ def reddit(sub: str):
     """Top posts of the week on r/<sub> whose titles parse as 'Artist - Title'."""
 
     def source(cfg: Config) -> list[Track | Release]:
-        content = _reddit_rss(sub)
+        # All-time top first (the sub's canon), then this week's: ingest skips anything already offered, so
+        # once the all-time list is used up the weekly posts take over by themselves.
         ns = {"a": "http://www.w3.org/2005/Atom"}
-        titles = [e.findtext("a:title", default="", namespaces=ns) for e in ET.fromstring(content).findall("a:entry", ns)]
+        titles: list[str] = []
+        for window in cfg.reddit_windows:
+            for e in ET.fromstring(_reddit_rss(sub, window)).findall("a:entry", ns):
+                t = e.findtext("a:title", default="", namespaces=ns)
+                if t and t not in titles:
+                    titles.append(t)
         parsed = llm.parse_titles(cfg, sub, titles) if llm.enabled(cfg) else None
         items: list[Track | Release] = []
         if parsed is None:  # no LLM, or it failed: regex

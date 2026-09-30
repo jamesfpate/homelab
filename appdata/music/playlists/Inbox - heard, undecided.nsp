@@ -1,0 +1,8 @@
+{
+  "name": "Inbox - heard, undecided",
+  "comment": "Played but not starred: removed at the next 22:00 promote unless you star them first.",
+  "all": [{ "contains": { "filepath": "inbox/" } }, { "gt": { "playCount": 0 } }, { "is": { "loved": false } }, { "isNot": { "rating": 1 } }],
+  "sort": "lastPlayed",
+  "order": "desc",
+  "limit": 500
+}

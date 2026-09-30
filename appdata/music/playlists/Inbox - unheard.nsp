@@ -1,0 +1,8 @@
+{
+  "name": "Inbox - unheard",
+  "comment": "Inbox tracks you have not played yet.",
+  "all": [{ "contains": { "filepath": "inbox/" } }, { "is": { "playCount": 0 } }],
+  "sort": "dateadded",
+  "order": "desc",
+  "limit": 500
+}
