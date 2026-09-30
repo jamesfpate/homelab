@@ -84,6 +84,8 @@ services:
     networks:
       vlan-downloads:
         ipv4_address: 192.168.60.71
+      vlan-private:
+        ipv4_address: 192.168.1.28 # reaches Ollama on br0 (VLANs are isolated)
     volumes:
       - /mnt/user/appdata/musicflow:/config # beets db, logs, state
       - /mnt/user/plexmedia/music:/music # same path Navidrome sees
@@ -99,6 +101,9 @@ services:
       - SLSKD_API_KEY=${SLSKD_API_KEY}
       - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
       - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,shoegaze # top-of-week posts titled 'Artist - Title'
+      - OLLAMA_URL=http://192.168.1.52:11434 # local LLM: parses Reddit titles, scores candidates for taste
+      - OLLAMA_MODEL=gemma4:26b-a4b-it-qat
+      - LLM_FILTER=false # shadow: scores are logged and shown on the dashboard but don't change what is fetched
       - DRY_RUN=true # flip to false after checking the first run's log
 
   musicflow-web: # dashboard: inbox by source, keep rate per source, activity (inbox.<domain>)

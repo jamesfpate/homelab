@@ -38,6 +38,11 @@ class Config:
     fresh_max_releases: int
     fresh_types: tuple[str, ...]
     reddit_limit: int
+    ollama_url: str
+    ollama_model: str
+    ollama_timeout_s: int
+    llm_filter: bool
+    llm_min_score: int
     download_timeout_s: int
 
 
@@ -64,5 +69,10 @@ def load() -> Config:
         fresh_max_releases=int(_env("FRESH_MAX_RELEASES", "10")),
         fresh_types=tuple(t.strip().lower() for t in _env("FRESH_TYPES", "album,ep,single").split(",")),
         reddit_limit=int(_env("REDDIT_LIMIT", _env("LISTENTOTHIS_LIMIT", "50"))),  # per subreddit
+        ollama_url=_env("OLLAMA_URL", "").rstrip("/"),  # empty = no LLM stage
+        ollama_model=_env("OLLAMA_MODEL", "gemma4:26b-a4b-it-qat"),
+        ollama_timeout_s=int(_env("OLLAMA_TIMEOUT_S", "300")),
+        llm_filter=_bool("LLM_FILTER", False),  # false = shadow mode: score and log, never skip
+        llm_min_score=int(_env("LLM_MIN_SCORE", "5")),
         download_timeout_s=int(_env("DOWNLOAD_TIMEOUT_MIN", "20")) * 60,
     )

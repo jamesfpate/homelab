@@ -101,6 +101,34 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
             )
         return "".join(out) or "<tr><td colspan=4 class=muted>nothing yet</td></tr>"
 
+    # Shadow scoring: does the LLM's score predict what gets kept? Decided events joined to their latest score.
+    buckets = {"0-3": Counter(), "4-6": Counter(), "7-10": Counter()}
+    for r in con.execute(
+        "select e.action, s.score from events e join scores s on lower(s.artist)=lower(e.artist) and lower(s.title)=lower(e.title) "
+        "where e.action in ('kept','disliked','heard') group by e.id having s.id = max(s.id)"
+    ):
+        b = "0-3" if r["score"] <= 3 else "4-6" if r["score"] <= 6 else "7-10"
+        buckets[b]["decided"] += 1
+        if r["action"] == "kept":
+            buckets[b]["kept"] += 1
+    latest_batch = con.execute("select max(batch) b from scores").fetchone()["b"]
+    top = con.execute("select * from scores where batch=? order by score desc, id limit 12", (latest_batch,)).fetchall() if latest_batch else []
+    scored_total = con.execute("select count(*) n from scores").fetchone()["n"]
+    bucket_rows = "".join(
+        f"<tr><td>{k}</td><td class=n>{c['decided']}</td><td class=n>{c['kept']}</td><td class=n>{pct(c['kept'] / c['decided'] if c['decided'] else None)}</td></tr>"
+        for k, c in buckets.items()
+    )
+    top_rows = "".join(
+        f"<tr><td class=n>{r['score']}</td><td>{e(r['source'] or '')}</td><td>{e(r['artist'])} - {e(r['title'])}</td><td class=muted>{e(r['reason'] or '')}</td></tr>"
+        for r in top
+    ) or "<tr><td colspan=4 class=muted>no scores yet</td></tr>"
+    llm_section = f"""
+<h2>Taste score{' (shadow: logged, not filtering)' if not cfg.llm_filter else ' (filtering below ' + str(cfg.llm_min_score) + ')'}</h2>
+<div class="sub" style="margin-bottom:8px">Local LLM score 0–10 per candidate, {scored_total} scored so far. Keep rate by score bucket shows whether the score predicts what you star.</div>
+<div class="wrap"><table><tr><th>Score</th><th class=n>Decided</th><th class=n>Kept</th><th class=n>Keep rate</th></tr>{bucket_rows}</table></div>
+<h2>Latest batch, highest scored{f' ({e(latest_batch)})' if latest_batch else ''}</h2>
+<div class="wrap"><table><tr><th class=n>Score</th><th>Source</th><th>Track</th><th>Why</th></tr>{top_rows}</table></div>""" if cfg.ollama_url else ""
+
     last_ingest = _last(con, ("added", "not_found"))
     last_promote = _last(con, _OUTCOMES)
     return f"""<!doctype html>
@@ -149,6 +177,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
 <div class="wrap"><table><tr><th>Source</th><th class=n>Inbox now</th><th class=n>Added</th><th class=n>Kept</th><th class=n>Disliked</th><th class=n>Heard, dropped</th><th class=n>Not found</th><th class=n>Keep rate</th></tr>{score_rows(month)}</table></div>
 <h2>Sources, all time</h2>
 <div class="wrap"><table><tr><th>Source</th><th class=n>Inbox now</th><th class=n>Added</th><th class=n>Kept</th><th class=n>Disliked</th><th class=n>Heard, dropped</th><th class=n>Not found</th><th class=n>Keep rate</th></tr>{score_rows(all_time)}</table></div>
+{llm_section}
 <h2>Kept</h2>
 <div class="wrap"><table><tr><th>When</th><th></th><th>Source</th><th>Track</th></tr>{ev_rows(kept)}</table></div>
 <h2>Recent activity</h2>

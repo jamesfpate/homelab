@@ -104,7 +104,7 @@ services:
       - TTS_STREAMING_MODELS=kokoro
 
   # Local LLM: HA conversation agent (thinking off) + AI Task agent (thinking on), one resident model.
-  # Unauthenticated API: br0 only. Model: gemma4:26b-nvfp4 (pull after first start).
+  # Unauthenticated API: br0 only. Model: gemma4:26b-a4b-it-qat (pull after first start).
   ollama:
     image: ollama/ollama:latest
     container_name: ollama

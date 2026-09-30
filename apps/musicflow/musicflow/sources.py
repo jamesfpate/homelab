@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 import requests
 
+from . import llm
 from .config import Config
 from .listenbrainz import ListenBrainz
 from .util import log
@@ -92,16 +93,22 @@ def _reddit_rss(sub: str) -> bytes:
 def reddit(sub: str):
     """Top posts of the week on r/<sub> whose titles parse as 'Artist - Title'."""
 
-    def source(cfg: Config) -> list[Track]:
+    def source(cfg: Config) -> list[Track | Release]:
         content = _reddit_rss(sub)
         ns = {"a": "http://www.w3.org/2005/Atom"}
-        tracks = []
-        for entry in ET.fromstring(content).findall("a:entry", ns):
-            track = parse_reddit_title(entry.findtext("a:title", default="", namespaces=ns))
-            if track:
-                tracks.append(track)
-        log.info("r/%s: %d parsable posts", sub, len(tracks))
-        return tracks[: cfg.reddit_limit]
+        titles = [e.findtext("a:title", default="", namespaces=ns) for e in ET.fromstring(content).findall("a:entry", ns)]
+        parsed = llm.parse_titles(cfg, sub, titles) if llm.enabled(cfg) else None
+        items: list[Track | Release] = []
+        if parsed is None:  # no LLM, or it failed: regex
+            items = [t for t in (parse_reddit_title(t) for t in titles) if t]
+        else:
+            for p in parsed:
+                if p and p["kind"] == "album":
+                    items.append(Release(p["artist"], p["title"], ""))
+                elif p:
+                    items.append(Track(p["artist"], p["title"]))
+        log.info("r/%s: %d of %d posts parsed%s", sub, len(items), len(titles), " (llm)" if parsed is not None else "")
+        return items[: cfg.reddit_limit]
 
     source.__name__ = f"reddit_{sub}"
     return source

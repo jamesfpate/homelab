@@ -8,7 +8,7 @@ from datetime import date
 from itertools import chain, zip_longest
 from pathlib import Path
 
-from . import history, playlists, report, youtube
+from . import history, llm, playlists, report, youtube
 from .config import Config
 from .navidrome import Navidrome
 from .slskd import Slskd
@@ -42,6 +42,8 @@ def run(cfg: Config, which: list[str]) -> None:
         except Exception as e:  # one broken source (e.g. ListenBrainz outage) shouldn't stop the others
             log.warning("source %s failed: %s", name, e)
     queue = [c for c in chain.from_iterable(zip_longest(*candidates)) if c]
+    if llm.enabled(cfg):
+        queue = _score(cfg, songs, queue, batch)
 
     sl = None if cfg.dry_run else Slskd(cfg.slskd_url, cfg.slskd_api_key, cfg.slskd_downloads, cfg.download_timeout_s)
     got = 0
@@ -59,7 +61,7 @@ def run(cfg: Config, which: list[str]) -> None:
                 continue
             got += _fetch_track(cfg, sl, item, dest, name, batch)
         elif isinstance(item, Release):
-            key = f"r:{item.mbid}"
+            key = f"r:{item.mbid}" if item.mbid else "r:%s|%s" % (norm(item.artist), norm(item.album))
             if key in seen or (norm(item.artist), norm(item.album)) in owned_albums:
                 continue
             if cfg.dry_run:
@@ -77,6 +79,24 @@ def run(cfg: Config, which: list[str]) -> None:
         save_json(seen_path, sorted(seen))
         nd.scan_and_wait()
     report.run(cfg)
+
+
+def _score(cfg: Config, songs, queue: list, batch: str) -> list:
+    """Taste-score the queue with the local LLM. Shadow mode only logs; LLM_FILTER drops low scores and sorts."""
+    loved = sorted({s.artist for s in songs if s.starred and s.artist}, key=str.lower)
+    taste = {"loved": loved, **history.decided_artists(cfg)}
+    cands = [(name, it.artist, it.title if isinstance(it, Track) else it.album) for name, it in queue]
+    scores = llm.score(cfg, taste, cands)
+    if not scores:
+        return queue
+    history.record_scores(cfg, batch, [(*cands[i], sc, why) for i, (sc, why) in scores.items()])
+    log.info("llm scored %d of %d candidates (%s)", len(scores), len(queue), "filter" if cfg.llm_filter else "shadow")
+    if not cfg.llm_filter:
+        return queue
+    keep = [(i, c) for i, c in enumerate(queue) if scores.get(i, (cfg.llm_min_score, ""))[0] >= cfg.llm_min_score]
+    keep.sort(key=lambda ic: -scores.get(ic[0], (cfg.llm_min_score, ""))[0])
+    log.info("llm filter kept %d of %d (min score %d)", len(keep), len(queue), cfg.llm_min_score)
+    return [c for _, c in keep]
 
 
 def _fetch_track(cfg: Config, sl: Slskd, t: Track, dest: Path, source: str, batch: str) -> int:
