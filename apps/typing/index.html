@@ -566,6 +566,12 @@ addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   e.preventDefault();
   unlockAudio();
+  if (e.key === "Tab") {   // Tab / Shift+Tab: next / previous game (number keys are answers, so they can't switch)
+    if (e.repeat) return;
+    const i = MODES.findIndex(m => m.m === current);
+    switchTo(MODES[(i + (e.shiftKey ? -1 : 1) + MODES.length) % MODES.length].id);
+    return;
+  }
   if (e.repeat || !current) return;
   current.key(e.key.length === 1 ? e.key.toUpperCase() : e.key);
 });
