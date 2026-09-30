@@ -295,6 +295,7 @@ services:
       - SLSKD_SLSK_USERNAME=${SLSK_USERNAME}
       - SLSKD_SLSK_PASSWORD=${SLSK_PASSWORD}
       - SLSKD_SLSK_LISTEN_PORT=${AIRVPN_SLSKD_PORT}
+      - SLSKD_NO_AUTH=true # LAN-only behind Traefik's ipallowlist; no web login
       - SLSKD_USERNAME=${SLSKD_WEB_USER}
       - SLSKD_PASSWORD=${SLSKD_WEB_PASSWORD}
       - SLSKD_API_KEY=${SLSKD_API_KEY}
