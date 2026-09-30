@@ -8,16 +8,17 @@ from datetime import date
 from itertools import chain, zip_longest
 from pathlib import Path
 
-from . import youtube
+from . import history, playlists, report, youtube
 from .config import Config
 from .navidrome import Navidrome
 from .slskd import Slskd
 from .sources import SOURCES, Release, Track
-from .util import ensure_tags, is_within, load_json, log, move_into, norm, save_json, track_key
+from .util import ensure_tags, is_within, load_json, log, move_into, norm, save_json, set_comment, track_key
 
 
 def run(cfg: Config, which: list[str]) -> None:
     nd = Navidrome(cfg.navidrome_url, cfg.navidrome_user, cfg.navidrome_password)
+    playlists.write_source_playlists(cfg, cfg.music_root / "playlists")
     songs = nd.all_songs()
     unheard = sum(
         1 for s in songs if is_within(s.path, cfg.inbox_dir) and not s.starred and s.rating != 1 and s.play_count == 0
@@ -25,6 +26,7 @@ def run(cfg: Config, which: list[str]) -> None:
     need = cfg.inbox_size - unheard
     log.info("inbox: %d unheard of %d", unheard, cfg.inbox_size)
     if need <= 0:
+        report.run(cfg)
         return
 
     owned_tracks = {track_key(s.artist, s.title) for s in songs}
@@ -55,7 +57,7 @@ def run(cfg: Config, which: list[str]) -> None:
                 log.info("[dry-run] would fetch %s - %s (%s)", item.artist, item.title, name)
                 got += 1
                 continue
-            got += _fetch_track(sl, item, dest)
+            got += _fetch_track(cfg, sl, item, dest, name, batch)
         elif isinstance(item, Release):
             key = f"r:{item.mbid}"
             if key in seen or (norm(item.artist), norm(item.album)) in owned_albums:
@@ -64,7 +66,7 @@ def run(cfg: Config, which: list[str]) -> None:
                 log.info("[dry-run] would fetch release %s - %s (%s)", item.artist, item.album, name)
                 got += 1
                 continue
-            added = _fetch_release(sl, item, dest / f"{item.artist} - {item.album}", room=need - got)
+            added = _fetch_release(cfg, sl, item, dest / f"{item.artist} - {item.album}", need - got, name, batch)
             if added < 0:  # didn't fit: leave it unseen so it can come back when there's room
                 continue
             got += added
@@ -74,9 +76,10 @@ def run(cfg: Config, which: list[str]) -> None:
     if not cfg.dry_run:
         save_json(seen_path, sorted(seen))
         nd.scan_and_wait()
+    report.run(cfg)
 
 
-def _fetch_track(sl: Slskd, t: Track, dest: Path) -> int:
+def _fetch_track(cfg: Config, sl: Slskd, t: Track, dest: Path, source: str, batch: str) -> int:
     hit = sl.best_track(t.artist, t.title)
     files = sl.download(hit[0], [hit[1]]) if hit else []
     if files:
@@ -85,20 +88,26 @@ def _fetch_track(sl: Slskd, t: Track, dest: Path) -> int:
         path = youtube.download(t.artist, t.title, dest)
         if not path:
             log.info("not found: %s - %s", t.artist, t.title)
+            history.record(cfg, "not_found", source=source, artist=t.artist, title=t.title, batch=batch)
             return 0
     ensure_tags(path, t.artist, t.title)
+    set_comment(path, f"musicflow: {source} {batch}")
+    history.record(cfg, "added", source=source, artist=t.artist, title=t.title, path=path, batch=batch)
     return 1
 
 
-def _fetch_release(sl: Slskd, r: Release, dest: Path, room: int) -> int:
+def _fetch_release(cfg: Config, sl: Slskd, r: Release, dest: Path, room: int, source: str, batch: str) -> int:
     hit = sl.best_folder(r.artist, r.album)
     if not hit:
         log.info("release not found: %s - %s", r.artist, r.album)
+        history.record(cfg, "not_found", source=source, artist=r.artist, album=r.album, batch=batch)
         return 0
     if len(hit[1]) > room:  # never overfill; a later run with more room will pick it up
         log.info("no room for %s - %s (%d tracks, %d free)", r.artist, r.album, len(hit[1]), room)
         return -1
     files = sl.download(hit[0], hit[1])
     for f in files:
-        move_into(f, dest)
+        path = move_into(f, dest)
+        set_comment(path, f"musicflow: {source} {batch}")
+        history.record(cfg, "added", source=source, artist=r.artist, title=path.stem, album=r.album, path=path, batch=batch)
     return len(files)

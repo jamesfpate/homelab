@@ -104,3 +104,26 @@ def ensure_tags(path: Path, artist: str, title: str) -> None:
         changed = True
     if changed:
         audio.save()
+
+
+def set_comment(path: Path, text: str) -> None:
+    """Write a comment tag (provenance: which source/batch a track came from). Best effort."""
+    import mutagen
+    from mutagen.id3 import COMM, ID3
+
+    try:
+        audio = mutagen.File(path)
+        if audio is None:
+            return
+        if audio.tags is None:
+            audio.add_tags()
+        if isinstance(audio.tags, ID3):
+            audio.tags.delall("COMM")
+            audio.tags.add(COMM(encoding=3, lang="eng", desc="", text=[text]))
+        elif path.suffix.lower() in {".m4a", ".mp4"}:
+            audio.tags["\xa9cmt"] = [text]
+        else:
+            audio.tags["comment"] = [text]
+        audio.save()
+    except Exception as e:
+        log.info("could not write comment to %s: %s", path.name, e)

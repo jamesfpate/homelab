@@ -79,6 +79,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.14 / 192.168.40.46 / 192.168.60.14 - Navidrome - listen.domain.com  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.26 - typing (kids typing game, internal only) - type.domain.com  
+192.168.1.27 - musicflow dashboard (inbox by source, keep rates) - inbox.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
@@ -152,6 +153,9 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 6. `musicflow` starts with `DRY_RUN=true`: check `docker logs musicflow` after the first 22:00 run, or run
    `docker exec musicflow python -m musicflow promote` by hand; then set `DRY_RUN=false` in `stacks/music.yaml`.
    Other commands: `ingest all|exploration|fresh|r/<subreddit>`, `sync-loves`, `seed /config/liked.csv --limit 500`.
+   Provenance: each inbox file gets a comment tag `musicflow: <source> <date>`, Navidrome gets an `Inbox - <source>`
+   smart playlist per source, and every add/keep/dislike/drop is logged to `/config/musicflow.db`, which feeds the
+   dashboard at inbox.<domain> (`musicflow-web`; copy `appdata/musicflow/nginx.conf` to `/mnt/user/appdata/musicflow/`).
 7. Pin/upgrade deliberately: Lidarr nightly, slskd, gluetun and Navidrome are pinned so the 03:00
    auto-update can't change them. yt-dlp inside musicflow self-updates daily (YouTube breaks it often).
 8. `musicflow` is built from `apps/musicflow` (`pull_policy: build`). A plain redeploy reuses the old image, so after

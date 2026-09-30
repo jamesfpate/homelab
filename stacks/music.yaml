@@ -100,3 +100,21 @@ services:
       - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
       - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,shoegaze # top-of-week posts titled 'Artist - Title'
       - DRY_RUN=true # flip to false after checking the first run's log
+
+  musicflow-web: # dashboard: inbox by source, keep rate per source, activity (inbox.<domain>)
+    image: nginx:alpine
+    container_name: musicflow-web
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.27
+    volumes:
+      - /mnt/user/appdata/musicflow/www:/usr/share/nginx/html:ro # written by musicflow after each run
+      - /mnt/user/appdata/musicflow/nginx.conf:/etc/nginx/conf.d/default.conf:ro # appdata/musicflow/nginx.conf
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=br0"
+      - "traefik.http.routers.musicflow.rule=Host(`inbox.${DOMAIN}`)"
+      - "traefik.http.routers.musicflow.entrypoints=websecure"
+      - "traefik.http.routers.musicflow.middlewares=ipallowlist"
+      - "traefik.http.services.musicflow.loadbalancer.server.port=80"

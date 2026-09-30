@@ -42,6 +42,7 @@ def parse_reddit_title(text: str) -> Track | None:
         return None
     title = m["title"]
     title = re.sub(r"\s*[\{\|].*$", "", title)  # "{FULL ALBUM}", "| Live on KEXP"
+    title = re.sub(r"\.\s+(?=\S+(\s+\S+){3,})", "\u0000", title, count=1).split("\u0000")[0]  # ". then a sentence of commentary"
     title = re.sub(r"\s*\(\d{4}\)\s*$", "", title).strip()
     return Track(m["artist"].strip(), title) if title and "@" not in m["artist"] else None
 

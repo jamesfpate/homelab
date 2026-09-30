@@ -17,6 +17,7 @@ from pathlib import Path
 from .config import Config
 from .listenbrainz import ListenBrainz
 from .navidrome import Navidrome, Song
+from . import history, report
 from .util import AUDIO_EXTS, is_within, load_json, log, move_into, prune_empty_dirs, safe_delete, save_json, track_key
 
 
@@ -41,16 +42,19 @@ def run(cfg: Config) -> None:
                 move_into(s.path, staging)
             keep.append(s)
             counts["kept"] += 1
+            history.record(cfg, "kept", artist=s.artist, title=s.title, album=s.album, path=s.path)
         elif s.rating == 1:
             if not cfg.dry_run:
                 lb.feedback(s.mbid or lb.lookup_mbid(s.artist, s.title), -1)
             safe_delete(s.path, cfg.inbox_dir, cfg.dry_run)
             counts["disliked"] += 1
+            history.record(cfg, "disliked", artist=s.artist, title=s.title, album=s.album, path=s.path)
         elif s.play_count > 0:
             last = s.played or now
             if (now - last).total_seconds() >= cfg.played_grace_hours * 3600:
                 safe_delete(s.path, cfg.inbox_dir, cfg.dry_run)
                 counts["heard"] += 1
+                history.record(cfg, "heard", artist=s.artist, title=s.title, album=s.album, path=s.path)
             else:
                 counts["grace"] += 1
         else:
@@ -61,9 +65,11 @@ def run(cfg: Config) -> None:
     for f in cfg.inbox_dir.rglob("*"):
         if f.is_file() and f.resolve() not in known and _age_days(f) >= 14:
             safe_delete(f, cfg.inbox_dir, cfg.dry_run)
+            history.record(cfg, "stale", title=f.name, path=f)
 
     log.info("result: %s", counts)
     if cfg.dry_run:
+        report.run(cfg)
         return
     prune_empty_dirs(cfg.inbox_dir, dry_run=False)
     if keep:
@@ -71,6 +77,7 @@ def run(cfg: Config) -> None:
     nd.scan_and_wait()
     if keep:
         _restar(nd, keep, cfg)
+    report.run(cfg)
 
 
 def _age_days(path: Path) -> float:
