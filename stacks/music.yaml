@@ -59,6 +59,9 @@ services:
       - ND_SCANNER_PURGEMISSING=always # drop deleted inbox tracks from the DB
       - ND_SUBSONIC_DEFAULTREPORTREALPATH=true # musicflow maps songs to files via the API
       - ND_LISTENBRAINZ_ENABLED=true # link per user in Navidrome > Personal
+      - ND_LASTFM_ENABLED=true # scrobble to Last.fm too; link per user in Navidrome > Personal
+      - ND_LASTFM_APIKEY=${LASTFM_API_KEY}
+      - ND_LASTFM_SECRET=${LASTFM_SECRET}
       - ND_ENABLESTARRATING=true
       - ND_LOGLEVEL=info
     labels:
