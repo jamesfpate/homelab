@@ -247,7 +247,6 @@ services:
 
   gluetun: #VPN for slskd only (phase 2): AirVPN WireGuard device "slskd" with a forwarded port
     # The UDM "downloads-to-airvpn" route stays paused: it can't pass an inbound port to slskd.
-    profiles: ["discovery"]
     image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun
     restart: unless-stopped
@@ -279,7 +278,6 @@ services:
       - "traefik.http.services.slskd.loadbalancer.server.port=5030"
 
   slskd: #Soulseek client (phase 2), all traffic through gluetun
-    profiles: ["discovery"]
     image: slskd/slskd:0.26.0
     container_name: slskd
     restart: unless-stopped

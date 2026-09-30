@@ -13,7 +13,7 @@ networks:
 # HA integration URL: http://192.168.40.45:8095. Web UI via Traefik (on vlan-iot): music.<domain>.
 #
 # Self-hosted music (see README "Music"): Navidrome serves /mnt/user/plexmedia/music.
-# Phase 2 discovery services carry `profiles: ["discovery"]` so Komodo does not start them yet.
+# Phase 2 discovery services (musicflow) are live; see README "Phase 2".
 # To turn them on, delete those profile lines (here and in media.yaml) and push.
 services:
   music-assistant:
@@ -72,7 +72,6 @@ services:
 
   musicflow: # Phase 2: keeps INBOX_SIZE unheard tracks in the inbox (Weekly Exploration, Fresh Releases, r/listentothis);
     # star=keep, rate 1=dislike, heard+unstarred=delete, unheard never deleted
-    profiles: ["discovery"]
     build: ../apps/musicflow
     image: musicflow:local
     pull_policy: build
