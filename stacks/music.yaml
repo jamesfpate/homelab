@@ -101,6 +101,7 @@ services:
       - SLSKD_API_KEY=${SLSKD_API_KEY}
       - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
       - PLAYED_GRACE_HOURS=0 # played and not starred = not wanted: removed at the next 22:00 promote
+      - HEARD_FEEDBACK=hate # ...and reported to ListenBrainz as a dislike, same as a 1-star rating
       - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,shoegaze
       - REDDIT_WINDOWS=all,month,week # per sub: all-time top 100, then month, then week; seen posts are never re-offered (all-time is memes on genre subs, the LLM parser drops those)
       - OLLAMA_URL=http://192.168.1.52:11434 # local LLM: parses Reddit titles, scores candidates for taste

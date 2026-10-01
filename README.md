@@ -118,7 +118,8 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
   - Symfonium keeps the `Inbox` and `Starred` smart playlists downloaded.
   - Nightly 22:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
     rated 1 -> ListenBrainz hate, deleted; heard (a logged play) and not starred -> deleted at the next promote
-    (`PLAYED_GRACE_HOURS=0`; a logged play needs about half the track, so quick skips stay unheard).
+    and also hated on ListenBrainz (`PLAYED_GRACE_HOURS=0`, `HEARD_FEEDBACK=hate`; a logged play needs about half
+    the track, so quick skips stay unheard).
     Unheard songs are never deleted. It only ever deletes under `inbox/`.
   - Skipping early doesn't log a play, so a skipped track stays in the inbox; rate it 1 to clear it.
 - slskd runs behind gluetun on its own AirVPN WireGuard device with a forwarded port (Soulseek needs inbound).

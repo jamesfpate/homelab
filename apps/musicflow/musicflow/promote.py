@@ -2,7 +2,8 @@
 
   starred                    -> ListenBrainz love, beets-tagged into /music/library, re-starred at its new path
   rated 1                    -> ListenBrainz hate, deleted
-  heard, not starred         -> deleted once PLAYED_GRACE_HOURS have passed since the last play
+  heard, not starred         -> deleted once PLAYED_GRACE_HOURS have passed since the last play; ListenBrainz hate too
+                                when HEARD_FEEDBACK=hate (played and not starred = not wanted)
   unheard                    -> always kept (ingest only fills up to INBOX_SIZE, so the inbox can't overflow)
 
 "Heard" = Navidrome logged a play (Symfonium submits one after ~half the track), so early skips stay unheard.
@@ -52,6 +53,8 @@ def run(cfg: Config) -> None:
         elif s.play_count > 0:
             last = s.played or now
             if (now - last).total_seconds() >= cfg.played_grace_hours * 3600:
+                if cfg.heard_feedback == "hate" and not cfg.dry_run:
+                    lb.feedback(s.mbid or lb.lookup_mbid(s.artist, s.title), -1)
                 safe_delete(s.path, cfg.inbox_dir, cfg.dry_run)
                 counts["heard"] += 1
                 history.record(cfg, "heard", artist=s.artist, title=s.title, album=s.album, path=s.path)

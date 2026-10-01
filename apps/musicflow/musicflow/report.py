@@ -8,7 +8,8 @@ from pathlib import Path
 
 from .config import Config
 from .history import connect, source_from_path
-from .util import AUDIO_EXTS, log
+from .navidrome import Navidrome
+from .util import AUDIO_EXTS, is_within, log
 
 _OUTCOMES = ("kept", "disliked", "heard", "stale")
 
@@ -50,9 +51,25 @@ def _last(con: sqlite3.Connection, actions: tuple[str, ...]) -> str | None:
     return row["ts"] if row and row["ts"] else None
 
 
+def _live(cfg: Config) -> dict | None:
+    """What Navidrome says about the inbox right now (stars and plays from the phone), or None if unreachable."""
+    try:
+        nd = Navidrome(cfg.navidrome_url, cfg.navidrome_user, cfg.navidrome_password)
+        inbox = [s for s in nd.all_songs() if is_within(s.path, cfg.inbox_dir)]
+    except Exception as e:
+        log.info("report: Navidrome not reachable (%s)", e)
+        return None
+    starred = [s for s in inbox if s.starred]
+    disliked = [s for s in inbox if s.rating == 1 and not s.starred]
+    played = [s for s in inbox if s.play_count and not s.starred and s.rating != 1]
+    unheard = [s for s in inbox if not s.play_count and not s.starred and s.rating != 1]
+    return {"starred": starred, "disliked": disliked, "played": played, "unheard": len(unheard), "total": len(inbox)}
+
+
 def render(cfg: Config, con: sqlite3.Connection) -> str:
     e = html.escape
     now = datetime.now()
+    live = _live(cfg)
     inbox = _inbox_now(cfg)
     all_time = _scorecard(con, None)
     month = _scorecard(con, (now - timedelta(days=30)).isoformat(timespec="seconds"))
@@ -131,6 +148,21 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
 <h2>Latest batch, highest scored{f' ({e(latest_batch)})' if latest_batch else ''}</h2>
 <div class="wrap"><table><tr><th class=n>Score</th><th>Source</th><th>Track</th><th>Why</th></tr>{top_rows}</table></div>""" if cfg.ollama_url else ""
 
+    def song_rows(songs, note: str) -> str:
+        return "".join(
+            f"<tr><td>{e(source_from_path(cfg, s.path) or '')}</td><td>{e(s.artist)} - {e(s.title)}</td><td class=muted>{note}</td></tr>"
+            for s in songs
+        ) or f"<tr><td colspan=3 class=muted>none</td></tr>"
+
+    if live:
+        live_section = f"""
+<h2>Inbox right now</h2>
+<div class="sub" style="margin-bottom:8px">Live from Navidrome (hearts, ratings and plays from your apps). {live['unheard']} unheard of {live['total']}. The 22:00 promote acts on the rest.</div>
+<div class="wrap"><table><tr><th>Source</th><th>Track</th><th>Tonight</th></tr>
+{song_rows(live['starred'], '⭐ kept → library')}{song_rows(live['disliked'], '👎 deleted, hated on ListenBrainz')}{song_rows(live['played'], 'played, not starred → deleted')}</table></div>"""
+    else:
+        live_section = '<h2>Inbox right now</h2><div class="muted">Navidrome not reachable when this page was generated.</div>'
+
     last_ingest = _last(con, ("added", "not_found"))
     last_promote = _last(con, _OUTCOMES)
     return f"""<!doctype html>
@@ -173,6 +205,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
   <div class="tile"><div class="k">Dropped, last 30 days</div><div class="v">{sum(c['disliked'] + c['heard'] for c in month.values())}</div></div>
   <div class="tile"><div class="k">Kept, all time</div><div class="v">{sum(c['kept'] for c in all_time.values())}</div></div>
 </div>
+{live_section}
 <h2>Keep rate by source</h2>
 <div class="sub" style="margin-bottom:8px">Share of decided tracks (kept, disliked or heard-and-dropped) that you starred.</div>
 <div class="chart">{''.join(bars) or '<div class=muted>no sources yet</div>'}</div>

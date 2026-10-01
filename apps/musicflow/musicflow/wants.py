@@ -21,6 +21,7 @@ def run(cfg: Config) -> None:
     todo = [a for a in starred if (norm(a.artist), norm(a.name)) not in done]
     log.info("wants: %d starred albums, %d new", len(starred), len(todo))
     if not todo:
+        report.run(cfg)  # keeps the dashboard's live inbox view fresh every 30 min
         return
     li = Lidarr(cfg.lidarr_url, cfg.lidarr_api_key)
     for a in todo:
@@ -42,5 +43,4 @@ def run(cfg: Config) -> None:
         if outcome != "dry-run":
             history.record(cfg, "wanted", source="album star", artist=hit["artist"]["artistName"], album=hit["title"],
                            title=outcome)
-    if not cfg.dry_run:
-        report.run(cfg)
+    report.run(cfg)
