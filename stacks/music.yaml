@@ -108,7 +108,7 @@ services:
       - LLM_FILTER=false # shadow: scores are logged and shown on the dashboard but don't change what is fetched
       - LIDARR_URL=http://192.168.60.68:8686 # album stars -> Lidarr every 30 min
       - LIDARR_API_KEY=${LIDARR_API_KEY}
-      - DRY_RUN=true # flip to false after checking the first run's log
+      - DRY_RUN=false # live since 2026-10-01 after a checked manual ingest run
 
   musicflow-web: # dashboard: inbox by source, keep rate per source, activity (inbox.<domain>)
     image: nginx:alpine
