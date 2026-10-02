@@ -36,6 +36,7 @@ class Config:
     played_grace_hours: float
     heard_feedback: str
     inbox_ttl_days: float
+    inbox_hard_ttl_days: float
     fresh_days: int
     fresh_max_releases: int
     fresh_types: tuple[str, ...]
@@ -74,6 +75,7 @@ def load() -> Config:
         played_grace_hours=float(_env("PLAYED_GRACE_HOURS", "24")),  # time to star after hearing a track
         heard_feedback=_env("HEARD_FEEDBACK", "none").lower(),  # "hate": played-not-starred also tells ListenBrainz you dislike it
         inbox_ttl_days=float(_env("INBOX_TTL_DAYS", "0")),  # >0: unstarred inbox tracks expire after this many days, played or not
+        inbox_hard_ttl_days=float(_env("INBOX_HARD_TTL_DAYS", "7")),  # ...only after proof the phone synced; unconditionally after this
         fresh_days=int(_env("FRESH_DAYS", "7")),
         fresh_max_releases=int(_env("FRESH_MAX_RELEASES", "10")),
         fresh_types=tuple(t.strip().lower() for t in _env("FRESH_TYPES", "album,ep,single").split(",")),

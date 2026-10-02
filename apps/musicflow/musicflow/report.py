@@ -9,7 +9,7 @@ from pathlib import Path
 from .config import Config
 from .history import connect, source_from_path
 from .navidrome import Navidrome
-from .util import AUDIO_EXTS, is_within, log
+from .util import AUDIO_EXTS, expiry_due, is_within, last_sync, log
 
 _OUTCOMES = ("kept", "disliked", "heard", "stale", "expired")
 
@@ -62,7 +62,9 @@ def _live(cfg: Config) -> dict | None:
     """What Navidrome says about the inbox right now (stars and plays from the phone), or None if unreachable."""
     try:
         nd = Navidrome(cfg.navidrome_url, cfg.navidrome_user, cfg.navidrome_password)
-        inbox = [s for s in nd.all_songs() if is_within(s.path, cfg.inbox_dir)]
+        songs = nd.all_songs()
+        inbox = [s for s in songs if is_within(s.path, cfg.inbox_dir)]
+        synced = last_sync(songs)
     except Exception as e:
         log.info("report: Navidrome not reachable (%s)", e)
         return None
@@ -70,7 +72,7 @@ def _live(cfg: Config) -> dict | None:
     disliked = [s for s in inbox if s.rating == 1 and not s.starred]
     played = [s for s in inbox if s.play_count and not s.starred and s.rating != 1]
     rest = [s for s in inbox if not s.play_count and not s.starred and s.rating != 1]
-    expiring = [s for s in rest if cfg.inbox_ttl_days and _age_days(s.path) >= cfg.inbox_ttl_days]
+    expiring = [s for s in rest if expiry_due(cfg, s, _age_days(s.path), synced)]
     return {"starred": starred, "disliked": disliked, "played": played, "expiring": expiring, "unheard": len(rest) - len(expiring), "total": len(inbox)}
 
 

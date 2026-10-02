@@ -21,15 +21,18 @@ from .config import Config
 from .listenbrainz import ListenBrainz
 from .navidrome import Navidrome, Song
 from . import history, report
-from .util import AUDIO_EXTS, is_within, load_json, log, move_into, prune_empty_dirs, safe_delete, save_json, track_key
+from .util import (AUDIO_EXTS, expiry_due, is_within, last_sync, load_json, log, move_into, prune_empty_dirs, safe_delete,
+                   save_json, track_key)
 
 
 def run(cfg: Config) -> None:
     nd = Navidrome(cfg.navidrome_url, cfg.navidrome_user, cfg.navidrome_password)
     lb = ListenBrainz(cfg.lb_user, cfg.lb_token)
     tag = "[dry-run] " if cfg.dry_run else ""
-    inbox = [s for s in nd.all_songs() if is_within(s.path, cfg.inbox_dir)]
-    log.info("inbox: %d tracks", len(inbox))
+    songs = nd.all_songs()
+    inbox = [s for s in songs if is_within(s.path, cfg.inbox_dir)]
+    synced = last_sync(songs)
+    log.info("inbox: %d tracks (last star/play seen %s)", len(inbox), synced)
 
     staging = cfg.staging_dir / time.strftime("%Y%m%d-%H%M%S")
     keep: list[Song] = []
@@ -62,7 +65,7 @@ def run(cfg: Config) -> None:
                 history.record(cfg, "heard", artist=s.artist, title=s.title, album=s.album, path=s.path)
             else:
                 counts["grace"] += 1
-        elif cfg.inbox_ttl_days and _age_days(s.path) >= cfg.inbox_ttl_days:
+        elif expiry_due(cfg, s, _age_days(s.path), synced):
             safe_delete(s.path, cfg.inbox_dir, cfg.dry_run)
             counts["expired"] += 1
             history.record(cfg, "expired", artist=s.artist, title=s.title, album=s.album, path=s.path)

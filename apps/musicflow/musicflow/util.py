@@ -5,6 +5,7 @@ import logging
 import re
 import shutil
 import unicodedata
+from datetime import datetime  # noqa: F401  (type reference in last_sync)
 from pathlib import Path
 
 log = logging.getLogger("musicflow")
@@ -83,6 +84,22 @@ def save_json(path: Path, data) -> None:
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
     tmp.replace(path)
+
+
+def last_sync(songs) -> "datetime | None":
+    """Newest star or play the server has seen: proof the phone has talked to Navidrome up to that moment."""
+    stamps = [t for s in songs for t in (s.played, s.starred_at) if t]
+    return max(stamps) if stamps else None
+
+
+def expiry_due(cfg, song, age_days: float, synced_at) -> bool:
+    """Unstarred inbox track old enough to expire, but only once a star/play newer than its arrival proves the
+    phone synced since it was added (so queued offline stars can't be lost); after INBOX_HARD_TTL_DAYS regardless."""
+    if not cfg.inbox_ttl_days or age_days < cfg.inbox_ttl_days:
+        return False
+    if age_days >= cfg.inbox_hard_ttl_days:
+        return True
+    return bool(synced_at and song.created and synced_at > song.created)
 
 
 def ensure_tags(path: Path, artist: str, title: str) -> None:

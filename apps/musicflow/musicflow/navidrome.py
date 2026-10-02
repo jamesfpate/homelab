@@ -25,6 +25,7 @@ class Song:
     created: datetime | None
     play_count: int = 0
     played: datetime | None = None
+    starred_at: datetime | None = None
 
 
 @dataclass
@@ -77,6 +78,7 @@ class Navidrome:
                         created=_dt(created),
                         play_count=int(s.get("playCount") or 0),
                         played=_dt(played),
+                        starred_at=_dt(s.get("starred")) if s.get("starred") else None,
                     )
                 )
             if len(batch) < page:
