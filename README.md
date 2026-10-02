@@ -112,7 +112,8 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - Lidarr (nightly + Tubifarry plugin) fills `library/` with albums via Prowlarr + sabnzbd (Usenet).
 - Phase 2 inbox: always `INBOX_SIZE` (50) unheard songs, about 3 hours: a day of commuting plus extra.
   - Daily 19:30 `musicflow ingest` counts unheard inbox tracks and adds only enough to get back to 50, taking
-    one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases and each subreddit in `SUBREDDITS`
+    one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases, Last.fm similar artists (seeded
+    from a random 8 of your starred artists each night) and each subreddit in `SUBREDDITS`
     (all-time top 100, then month, then week: `REDDIT_WINDOWS`)
     (`inbox/<source>/`). It never goes past 50 and never re-offers anything it has tried before.
   - Symfonium keeps the `Inbox` and `Starred` smart playlists downloaded.

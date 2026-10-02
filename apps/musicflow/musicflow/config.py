@@ -47,6 +47,8 @@ class Config:
     llm_min_score: int
     lidarr_url: str
     lidarr_api_key: str
+    lastfm_api_key: str
+    lastfm_seeds: int
     download_timeout_s: int
 
 
@@ -82,5 +84,7 @@ def load() -> Config:
         llm_min_score=int(_env("LLM_MIN_SCORE", "5")),
         lidarr_url=_env("LIDARR_URL", "").rstrip("/"),  # album stars -> Lidarr (wants)
         lidarr_api_key=_env("LIDARR_API_KEY", ""),
+        lastfm_api_key=_env("LASTFM_API_KEY", ""),  # source: similar artists to the ones you starred
+        lastfm_seeds=int(_env("LASTFM_SEEDS", "8")),
         download_timeout_s=int(_env("DOWNLOAD_TIMEOUT_MIN", "20")) * 60,
     )

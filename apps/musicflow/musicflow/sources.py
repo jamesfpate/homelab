@@ -4,6 +4,7 @@ To add a source: write a function returning Track or Release items and register 
 """
 
 import os
+import random
 import re
 import time
 import xml.etree.ElementTree as ET
@@ -14,7 +15,8 @@ import requests
 from . import llm
 from .config import Config
 from .listenbrainz import ListenBrainz
-from .util import log
+from .navidrome import Navidrome
+from .util import log, norm
 
 
 @dataclass
@@ -136,5 +138,47 @@ def fresh(cfg: Config) -> list[Release]:
     return [Release(r["artist_credit_name"], r["release_name"], r["release_mbid"]) for r in picks[: cfg.fresh_max_releases]]
 
 
+def lastfm_candidates(api_key: str, seeds: list[str], owned: set[str], per_seed: int = 10, limit: int = 30) -> list[Track]:
+    """Last.fm similar artists for each seed (artists you starred), one top track each, skipping artists you own."""
+    api = "https://ws.audioscrobbler.com/2.0/"
+    http = requests.Session()
+    http.headers["User-Agent"] = "musicflow/1.0 (homelab music discovery)"
+
+    def call(**params):
+        r = http.get(api, params={**params, "api_key": api_key, "format": "json"}, timeout=30)
+        r.raise_for_status()
+        return r.json()
+
+    scored: dict[str, float] = {}
+    for seed in seeds:
+        for a in call(method="artist.getSimilar", artist=seed, limit=per_seed, autocorrect=1).get("similarartists", {}).get("artist", []):
+            name = a.get("name", "")
+            if name and norm(name) not in owned:
+                scored[name] = max(scored.get(name, 0.0), float(a.get("match", 0)))
+    picks = sorted(scored, key=lambda n: -scored[n])[:limit]
+    tracks = []
+    for name in picks:
+        tt = call(method="artist.getTopTracks", artist=name, limit=1, autocorrect=1).get("toptracks", {}).get("track", [])
+        if tt:
+            tracks.append(Track(name, tt[0]["name"]))
+    return tracks
+
+
+def lastfm(cfg: Config) -> list[Track]:
+    if not cfg.lastfm_api_key:
+        return []
+    nd = Navidrome(cfg.navidrome_url, cfg.navidrome_user, cfg.navidrome_password)
+    songs = nd.all_songs()
+    starred = sorted({s.artist for s in songs if s.starred and s.artist})
+    if not starred:
+        log.info("lastfm: no starred artists yet")
+        return []
+    seeds = random.sample(starred, min(cfg.lastfm_seeds, len(starred)))  # a different slice of your taste each night
+    owned = {norm(s.artist) for s in songs if s.artist}
+    tracks = lastfm_candidates(cfg.lastfm_api_key, seeds, owned)
+    log.info("lastfm: %d seeds -> %d candidate tracks", len(seeds), len(tracks))
+    return tracks
+
+
 # Order matters: ingest takes one item from each in turn, starting with the first.
-SOURCES = {"exploration": exploration, "fresh": fresh, **{f"r/{sub}": reddit(sub) for sub in SUBREDDITS}}
+SOURCES = {"exploration": exploration, "fresh": fresh, "lastfm": lastfm, **{f"r/{sub}": reddit(sub) for sub in SUBREDDITS}}

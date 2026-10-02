@@ -107,6 +107,7 @@ services:
       - OLLAMA_URL=http://192.168.1.52:11434 # local LLM: parses Reddit titles, scores candidates for taste
       - OLLAMA_MODEL=gemma4:26b-a4b-it-qat
       - LLM_FILTER=false # shadow: scores are logged and shown on the dashboard but don't change what is fetched
+      - LASTFM_API_KEY=${LASTFM_API_KEY} # source "lastfm": similar artists to your starred ones, one top track each
       - LIDARR_URL=http://192.168.60.68:8686 # album stars -> Lidarr every 30 min
       - LIDARR_API_KEY=${LIDARR_API_KEY}
       - DRY_RUN=false # live since 2026-10-01 after a checked manual ingest run
