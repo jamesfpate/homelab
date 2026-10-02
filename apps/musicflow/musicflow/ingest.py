@@ -59,7 +59,11 @@ def run(cfg: Config, which: list[str]) -> None:
                 log.info("[dry-run] would fetch %s - %s (%s)", item.artist, item.title, name)
                 got += 1
                 continue
-            got += _fetch_track(cfg, sl, item, dest, name, batch)
+            try:
+                got += _fetch_track(cfg, sl, item, dest, name, batch)
+            except Exception as e:  # a bad peer or a slskd hiccup must not end the whole run
+                log.warning("fetch failed: %s - %s (%s): %s", item.artist, item.title, name, e)
+                history.record(cfg, "not_found", source=name, artist=item.artist, title=item.title, batch=batch)
         elif isinstance(item, Release):
             key = f"r:{item.mbid}" if item.mbid else "r:%s|%s" % (norm(item.artist), norm(item.album))
             if key in seen or (norm(item.artist), norm(item.album)) in owned_albums:
@@ -68,7 +72,12 @@ def run(cfg: Config, which: list[str]) -> None:
                 log.info("[dry-run] would fetch release %s - %s (%s)", item.artist, item.album, name)
                 got += 1
                 continue
-            added = _fetch_release(cfg, sl, item, dest / f"{item.artist} - {item.album}", need - got, name, batch)
+            try:
+                added = _fetch_release(cfg, sl, item, dest / f"{item.artist} - {item.album}", need - got, name, batch)
+            except Exception as e:
+                log.warning("fetch failed: %s - %s (%s): %s", item.artist, item.album, name, e)
+                history.record(cfg, "not_found", source=name, artist=item.artist, album=item.album, batch=batch)
+                added = 0
             if added < 0:  # didn't fit: leave it unseen so it can come back when there's room
                 continue
             got += added
