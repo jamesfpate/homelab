@@ -11,7 +11,7 @@ from .history import connect, source_from_path
 from .navidrome import Navidrome
 from .util import AUDIO_EXTS, is_within, log
 
-_OUTCOMES = ("kept", "disliked", "heard", "stale")
+_OUTCOMES = ("kept", "disliked", "heard", "stale", "expired")
 
 
 def run(cfg: Config, out_dir: Path | None = None) -> Path:
@@ -23,6 +23,13 @@ def run(cfg: Config, out_dir: Path | None = None) -> Path:
     out.write_text(page)
     log.info("report written: %s", out)
     return out
+
+
+def _age_days(path: Path) -> float:
+    try:
+        return (datetime.now().timestamp() - path.stat().st_mtime) / 86400
+    except OSError:
+        return 0.0
 
 
 def _inbox_now(cfg: Config) -> Counter:
@@ -62,8 +69,9 @@ def _live(cfg: Config) -> dict | None:
     starred = [s for s in inbox if s.starred]
     disliked = [s for s in inbox if s.rating == 1 and not s.starred]
     played = [s for s in inbox if s.play_count and not s.starred and s.rating != 1]
-    unheard = [s for s in inbox if not s.play_count and not s.starred and s.rating != 1]
-    return {"starred": starred, "disliked": disliked, "played": played, "unheard": len(unheard), "total": len(inbox)}
+    rest = [s for s in inbox if not s.play_count and not s.starred and s.rating != 1]
+    expiring = [s for s in rest if cfg.inbox_ttl_days and _age_days(s.path) >= cfg.inbox_ttl_days]
+    return {"starred": starred, "disliked": disliked, "played": played, "expiring": expiring, "unheard": len(rest) - len(expiring), "total": len(inbox)}
 
 
 def render(cfg: Config, con: sqlite3.Connection) -> str:
@@ -79,7 +87,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
     wanted = con.execute("select * from events where action='wanted' order by id desc limit 50").fetchall()
 
     def rate(c: Counter) -> float | None:
-        decided = c["kept"] + c["disliked"] + c["heard"]
+        decided = c["kept"] + c["disliked"] + c["heard"] + c["expired"]
         return c["kept"] / decided if decided else None
 
     def pct(x: float | None) -> str:
@@ -89,7 +97,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
     bars = []
     for s in sources:
         c = all_time[s]
-        decided = c["kept"] + c["disliked"] + c["heard"]
+        decided = c["kept"] + c["disliked"] + c["heard"] + c["expired"]
         r = rate(c)
         w = 0 if r is None else max(2, round(r * 100))
         label = f"{pct(r)} ({c['kept']} of {decided})" if decided else "no decisions yet"
@@ -104,7 +112,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
             c = card.get(s, Counter())
             out.append(
                 f"<tr><td>{e(s)}</td><td class=n>{inbox[s]}</td><td class=n>{c['added']}</td><td class=n>{c['kept']}</td>"
-                f"<td class=n>{c['disliked']}</td><td class=n>{c['heard']}</td><td class=n>{c['not_found']}</td>"
+                f"<td class=n>{c['disliked']}</td><td class=n>{c['heard'] + c['expired']}</td><td class=n>{c['not_found']}</td>"
                 f"<td class=n>{pct(rate(c))}</td></tr>"
             )
         return "".join(out)
@@ -124,7 +132,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
     buckets = {"0-3": Counter(), "4-6": Counter(), "7-10": Counter()}
     for r in con.execute(
         "select e.action, s.score from events e join scores s on lower(s.artist)=lower(e.artist) and lower(s.title)=lower(e.title) "
-        "where e.action in ('kept','disliked','heard') group by e.id having s.id = max(s.id)"
+        "where e.action in ('kept','disliked','heard','expired') group by e.id having s.id = max(s.id)"
     ):
         b = "0-3" if r["score"] <= 3 else "4-6" if r["score"] <= 6 else "7-10"
         buckets[b]["decided"] += 1
@@ -159,7 +167,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
 <h2>Inbox right now</h2>
 <div class="sub" style="margin-bottom:8px">Live from Navidrome (hearts, ratings and plays from your apps). {live['unheard']} unheard of {live['total']}. The 19:00 promote acts on the rest.</div>
 <div class="wrap"><table><tr><th>Source</th><th>Track</th><th>Tonight</th></tr>
-{song_rows(live['starred'], '⭐ kept → library')}{song_rows(live['disliked'], '👎 deleted, hated on ListenBrainz')}{song_rows(live['played'], 'played, not starred → deleted')}</table></div>"""
+{song_rows(live['starred'], '⭐ kept → library')}{song_rows(live['disliked'], '👎 deleted, hated on ListenBrainz')}{song_rows(live['played'], 'played, not starred → deleted')}{song_rows(live['expiring'], f'unstarred for {cfg.inbox_ttl_days:g} days → expires')}</table></div>"""
     else:
         live_section = '<h2>Inbox right now</h2><div class="muted">Navidrome not reachable when this page was generated.</div>'
 
@@ -193,7 +201,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
   td.ts {{ color:var(--muted); white-space:nowrap; font-size:13px; }} .muted {{ color:var(--muted); }}
   .tag {{ font-size:12px; padding:1px 7px; border-radius:10px; border:1px solid var(--line); color:var(--ink2); }}
   .tag.kept {{ color:var(--good); border-color:var(--good); }} .tag.disliked {{ color:var(--critical); border-color:var(--critical); }}
-  .tag.heard, .tag.stale {{ color:var(--serious); border-color:var(--serious); }} .tag.not_found {{ color:var(--muted); }}
+  .tag.heard, .tag.stale, .tag.expired {{ color:var(--serious); border-color:var(--serious); }} .tag.not_found {{ color:var(--muted); }}
   .tag.wanted {{ color:var(--series); border-color:var(--series); }}
   .wrap {{ overflow-x:auto; }}
 </style></head><body><main>
@@ -207,7 +215,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
 </div>
 {live_section}
 <h2>Keep rate by source</h2>
-<div class="sub" style="margin-bottom:8px">Share of decided tracks (kept, disliked or heard-and-dropped) that you starred.</div>
+<div class="sub" style="margin-bottom:8px">Share of decided tracks (kept, disliked, heard-and-dropped or expired) that you starred.</div>
 <div class="chart">{''.join(bars) or '<div class=muted>no sources yet</div>'}</div>
 <h2>Sources, last 30 days</h2>
 <div class="wrap"><table><tr><th>Source</th><th class=n>Inbox now</th><th class=n>Added</th><th class=n>Kept</th><th class=n>Disliked</th><th class=n>Heard, dropped</th><th class=n>Not found</th><th class=n>Keep rate</th></tr>{score_rows(month)}</table></div>

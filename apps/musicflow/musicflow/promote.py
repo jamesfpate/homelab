@@ -4,6 +4,8 @@
   rated 1                    -> ListenBrainz hate, deleted
   heard, not starred         -> deleted once PLAYED_GRACE_HOURS have passed since the last play; ListenBrainz hate too
                                 when HEARD_FEEDBACK=hate (played and not starred = not wanted)
+  unstarred for INBOX_TTL_DAYS -> deleted even if never "played": quick skips don't register as plays, so an
+                                old unstarred track means it was passed over
   unheard                    -> always kept (ingest only fills up to INBOX_SIZE, so the inbox can't overflow)
 
 "Heard" = Navidrome logged a play (Symfonium submits one after ~half the track), so early skips stay unheard.
@@ -31,7 +33,7 @@ def run(cfg: Config) -> None:
 
     staging = cfg.staging_dir / time.strftime("%Y%m%d-%H%M%S")
     keep: list[Song] = []
-    counts = {"kept": 0, "disliked": 0, "heard": 0, "unheard": 0, "grace": 0}
+    counts = {"kept": 0, "disliked": 0, "heard": 0, "expired": 0, "unheard": 0, "grace": 0}
     now = datetime.now(timezone.utc)
     for s in inbox:
         if not s.path.exists():
@@ -60,6 +62,10 @@ def run(cfg: Config) -> None:
                 history.record(cfg, "heard", artist=s.artist, title=s.title, album=s.album, path=s.path)
             else:
                 counts["grace"] += 1
+        elif cfg.inbox_ttl_days and _age_days(s.path) >= cfg.inbox_ttl_days:
+            safe_delete(s.path, cfg.inbox_dir, cfg.dry_run)
+            counts["expired"] += 1
+            history.record(cfg, "expired", artist=s.artist, title=s.title, album=s.album, path=s.path)
         else:
             counts["unheard"] += 1
 
