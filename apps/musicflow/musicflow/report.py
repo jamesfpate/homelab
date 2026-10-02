@@ -157,7 +157,7 @@ def render(cfg: Config, con: sqlite3.Connection) -> str:
     if live:
         live_section = f"""
 <h2>Inbox right now</h2>
-<div class="sub" style="margin-bottom:8px">Live from Navidrome (hearts, ratings and plays from your apps). {live['unheard']} unheard of {live['total']}. The 22:00 promote acts on the rest.</div>
+<div class="sub" style="margin-bottom:8px">Live from Navidrome (hearts, ratings and plays from your apps). {live['unheard']} unheard of {live['total']}. The 19:00 promote acts on the rest.</div>
 <div class="wrap"><table><tr><th>Source</th><th>Track</th><th>Tonight</th></tr>
 {song_rows(live['starred'], '⭐ kept → library')}{song_rows(live['disliked'], '👎 deleted, hated on ListenBrainz')}{song_rows(live['played'], 'played, not starred → deleted')}</table></div>"""
     else:

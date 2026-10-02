@@ -100,7 +100,7 @@ services:
       - SLSKD_URL=http://192.168.60.69:5030
       - SLSKD_API_KEY=${SLSKD_API_KEY}
       - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
-      - PLAYED_GRACE_HOURS=0 # played and not starred = not wanted: removed at the next 22:00 promote
+      - PLAYED_GRACE_HOURS=0 # played and not starred = not wanted: removed at the next 19:00 promote
       - HEARD_FEEDBACK=none # only an explicit 1-star rating is reported to ListenBrainz as a dislike
       - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,shoegaze
       - REDDIT_WINDOWS=all,month,week # per sub: all-time top 100, then month, then week; seen posts are never re-offered (all-time is memes on genre subs, the LLM parser drops those)

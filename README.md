@@ -111,12 +111,12 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
   reaches recommendations or the inbox. Spotify stays shared and is never connected to ListenBrainz.
 - Lidarr (nightly + Tubifarry plugin) fills `library/` with albums via Prowlarr + sabnzbd (Usenet).
 - Phase 2 inbox: always `INBOX_SIZE` (50) unheard songs, about 3 hours: a day of commuting plus extra.
-  - Nightly 02:30 `musicflow ingest` counts unheard inbox tracks and adds only enough to get back to 50, taking
+  - Daily 19:30 `musicflow ingest` counts unheard inbox tracks and adds only enough to get back to 50, taking
     one at a time from ListenBrainz Weekly Exploration, ListenBrainz Fresh Releases and each subreddit in `SUBREDDITS`
     (all-time top 100, then month, then week: `REDDIT_WINDOWS`)
     (`inbox/<source>/`). It never goes past 50 and never re-offers anything it has tried before.
   - Symfonium keeps the `Inbox` and `Starred` smart playlists downloaded.
-  - Nightly 22:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
+  - Daily 19:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
     rated 1 -> ListenBrainz hate, deleted; heard (a logged play) and not starred -> deleted at the next promote
     (`PLAYED_GRACE_HOURS=0`; a logged play needs about half the track, so quick skips stay unheard). Only an
     explicit 1-star rating is reported to ListenBrainz as a dislike (`HEARD_FEEDBACK=none`).
@@ -153,7 +153,7 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 4. Delete the `profiles: ["discovery"]` lines in `stacks/media.yaml` and `stacks/music.yaml`; push.
    DNS: `soulseek` -> 192.168.1.2.
 5. Lidarr: Tubifarry Soulseek download client -> `http://192.168.60.69:5030` + `SLSKD_API_KEY`, path `/downloads/slskd`.
-6. `musicflow` starts with `DRY_RUN=true`: check `docker logs musicflow` after the first 22:00 run, or run
+6. `musicflow` starts with `DRY_RUN=true`: check `docker logs musicflow` after the first 19:00 run, or run
    `docker exec musicflow python -m musicflow promote` by hand; then set `DRY_RUN=false` in `stacks/music.yaml`.
    Other commands: `ingest all|exploration|fresh|r/<subreddit>`, `sync-loves`, `seed /config/liked.csv --limit 500`.
    Local LLM (Ollama, `OLLAMA_URL`): parses Reddit titles and scores every candidate 0–10 for taste. `LLM_FILTER=false`
