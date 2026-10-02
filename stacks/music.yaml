@@ -101,8 +101,7 @@ services:
       - SLSKD_API_KEY=${SLSKD_API_KEY}
       - INBOX_SIZE=50 # unheard tracks kept in the inbox; refilled nightly, never exceeded
       - PLAYED_GRACE_HOURS=0 # played and not starred = not wanted: removed at the next 19:00 promote
-      - INBOX_TTL_DAYS=3 # quick skips don't count as plays: unstarred tracks expire after 3 days once the phone has synced since they arrived
-      - INBOX_HARD_TTL_DAYS=7 # ...and after 7 days regardless
+      - INBOX_TTL_DAYS=0 # off: unheard tracks are never removed. Symfonium's "min. play % before marking as played" is set low instead, so skips count as plays
       - HEARD_FEEDBACK=none # only an explicit 1-star rating is reported to ListenBrainz as a dislike
       - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,postpunk,blackmetal,stonerrock,emo,garagerock
       - REDDIT_WINDOWS=all,month,week # per sub: all-time top 100, then month, then week; seen posts are never re-offered (all-time is memes on genre subs, the LLM parser drops those)

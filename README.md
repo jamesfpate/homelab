@@ -120,10 +120,9 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
   - Daily 19:00 `musicflow promote`: starred -> ListenBrainz love, beets-tagged into `library/`, re-starred;
     rated 1 -> ListenBrainz hate, deleted; heard (a logged play) and not starred -> deleted at the next promote
     (`PLAYED_GRACE_HOURS=0`; a logged play needs about half the track, so quick skips stay unheard). Only an
-    explicit 1-star rating is reported to ListenBrainz as a dislike (`HEARD_FEEDBACK=none`). Quick skips are not
-    plays, so unstarred tracks also expire after `INBOX_TTL_DAYS` (3) whether played or not: do a pass, star the
-    good ones, the rest ages out. A track only expires once a newer star or play proves the phone has synced since
-    it arrived (queued offline stars are never lost), or after `INBOX_HARD_TTL_DAYS` (7) regardless. It only ever
+    explicit 1-star rating is reported to ListenBrainz as a dislike (`HEARD_FEEDBACK=none`). Unheard tracks are never
+    removed, so Symfonium's "min. play percentage before marking as played" is set low (~10%) so that a quick skip
+    counts as a play. (`INBOX_TTL_DAYS` can expire unstarred tracks by age instead; off by default.) It only ever
     deletes under `inbox/`.
   - Skipping early doesn't log a play, so a skipped track stays in the inbox; rate it 1 to clear it.
 - slskd runs behind gluetun on its own AirVPN WireGuard device with a forwarded port (Soulseek needs inbound).
