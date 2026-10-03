@@ -17,8 +17,9 @@ _PARSE_SYSTEM = """You extract music from Reddit post titles. For each input lin
 specific track or one specific album, and the artist and the track/album title with tags, years, commentary and
 "(Official Video)" style suffixes removed. kind is "track", "album" or "other". Use "other" for discussion
 threads, live/tour posts, playlists, articles, interviews, and for anniversaries, reissues, box sets and live
-collections of old releases (these are not new recommendations). Reply with JSON only:
-{"items": [{"i": <index>, "kind": "track|album|other", "artist": "<artist>", "title": "<track or album title>"}]}"""
+collections of old releases (these are not new recommendations). For an album, also give "track": the album's
+best-known or lead single (empty if unsure). Reply with JSON only:
+{"items": [{"i": <index>, "kind": "track|album|other", "artist": "<artist>", "title": "<track or album title>", "track": "<song for albums>"}]}"""
 
 _SCORE_SYSTEM = """You rate how well a music recommendation fits one listener's taste. You are given artists the
 listener loves, artists they kept from earlier recommendations, artists they disliked, and a list of candidates
@@ -75,7 +76,7 @@ def parse_titles(cfg: Config, sub: str, titles: list[str]) -> list[dict | None] 
             kind = str(it.get("kind", "other")).lower()
             artist, title = str(it.get("artist", "")).strip(), str(it.get("title", "")).strip()
             if kind in ("track", "album") and artist and title:
-                result[start + i] = {"kind": kind, "artist": artist, "title": title}
+                result[start + i] = {"kind": kind, "artist": artist, "title": title, "track": str(it.get("track", "")).strip()}
     return result
 
 

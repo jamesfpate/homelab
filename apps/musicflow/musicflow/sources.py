@@ -106,17 +106,23 @@ def reddit(sub: str):
                 if t and t not in titles:
                     titles.append(t)
         parsed = llm.parse_titles(cfg, sub, titles) if llm.enabled(cfg) else None
-        items: list[Track | Release] = []
+        items: list[Track] = []
         if parsed is None:  # no LLM, or it failed: regex
             items = [t for t in (parse_reddit_title(t) for t in titles) if t]
         else:
-            for p in parsed:
-                if p and p["kind"] == "album":
-                    items.append(Release(p["artist"], p["title"], ""))
-                elif p:
-                    items.append(Track(p["artist"], p["title"]))
-        log.info("r/%s: %d of %d posts parsed%s", sub, len(items), len(titles), " (llm)" if parsed is not None else "")
-        return items[: cfg.reddit_limit]
+            for raw, p in zip(titles, parsed):
+                if not p:
+                    continue
+                # An album post costs one inbox slot like everything else: its best-known song (the LLM names it),
+                # or the album title as a track search as a fallback. Whole albums only come from Fresh Releases.
+                # Only believe "album" when the post says so; a bare [FRESH] is a single by subreddit convention.
+                is_album = p["kind"] == "album" and re.search(r"\b(album|ep|lp|record|mixtape)\b", raw, re.I)
+                items.append(Track(p["artist"], p.get("track") or p["title"]) if is_album else Track(p["artist"], p["title"]))
+        owned = _owned_artists(cfg)
+        kept = [t for t in items if norm(t.artist) not in owned]
+        log.info("r/%s: %d of %d posts parsed%s, %d after dropping artists you own", sub, len(items), len(titles),
+                 " (llm)" if parsed is not None else "", len(kept))
+        return kept[: cfg.reddit_limit]
 
     source.__name__ = f"reddit_{sub}"
     return source
@@ -136,6 +142,22 @@ def fresh(cfg: Config) -> list[Release]:
     picks.sort(key=lambda r: r.get("confidence", 0), reverse=True)
     log.info("fresh releases: %d candidates", len(picks))
     return [Release(r["artist_credit_name"], r["release_name"], r["release_mbid"]) for r in picks[: cfg.fresh_max_releases]]
+
+
+_owned_cache: dict[int, set[str]] = {}
+
+
+def _owned_artists(cfg: Config) -> set[str]:
+    """Artists already in the library or inbox (normalised); fetched once per run."""
+    key = id(cfg)
+    if key not in _owned_cache:
+        try:
+            nd = Navidrome(cfg.navidrome_url, cfg.navidrome_user, cfg.navidrome_password)
+            _owned_cache[key] = {norm(s.artist) for s in nd.all_songs() if s.artist}
+        except Exception as e:
+            log.warning("could not load owned artists: %s", e)
+            _owned_cache[key] = set()
+    return _owned_cache[key]
 
 
 def lastfm_candidates(api_key: str, seeds: list[str], owned: set[str], per_seed: int = 10, limit: int = 30) -> list[Track]:

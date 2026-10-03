@@ -104,7 +104,7 @@ services:
       - INBOX_TTL_DAYS=0 # off: unheard tracks are never removed. Symfonium's "min. play % before marking as played" is set low instead, so skips count as plays
       - HEARD_FEEDBACK=none # only an explicit 1-star rating is reported to ListenBrainz as a dislike
       - SUBREDDITS=listentothis,folk,indieheads,progmetal,doommetal,postrock,postpunk,blackmetal,stonerrock,emo,garagerock
-      - REDDIT_WINDOWS=all,month,week # per sub: all-time top 100, then month, then week; seen posts are never re-offered (all-time is memes on genre subs, the LLM parser drops those)
+      - REDDIT_WINDOWS=month,week # per sub: top of the month, then the week; seen posts are never re-offered (all-time was the subs' canon/news, not discovery)
       - OLLAMA_URL=http://192.168.1.52:11434 # local LLM: parses Reddit titles, scores candidates for taste
       - OLLAMA_MODEL=gemma4:26b-a4b-it-qat
       - LLM_FILTER=false # shadow: scores are logged and shown on the dashboard but don't change what is fetched

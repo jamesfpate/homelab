@@ -80,7 +80,7 @@ def load() -> Config:
         fresh_max_releases=int(_env("FRESH_MAX_RELEASES", "10")),
         fresh_types=tuple(t.strip().lower() for t in _env("FRESH_TYPES", "album,ep,single").split(",")),
         reddit_limit=int(_env("REDDIT_LIMIT", _env("LISTENTOTHIS_LIMIT", "200"))),  # per subreddit
-        reddit_windows=tuple(w.strip() for w in _env("REDDIT_WINDOWS", "all,month,week").split(",") if w.strip()),
+        reddit_windows=tuple(w.strip() for w in _env("REDDIT_WINDOWS", "month,week").split(",") if w.strip()),
         ollama_url=_env("OLLAMA_URL", "").rstrip("/"),  # empty = no LLM stage
         ollama_model=_env("OLLAMA_MODEL", "gemma4:26b-a4b-it-qat"),
         ollama_timeout_s=int(_env("OLLAMA_TIMEOUT_S", "300")),

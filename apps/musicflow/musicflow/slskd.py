@@ -98,6 +98,7 @@ class Slskd:
                 words = set(norm(" ".join(_parts(folder)[-2:])).split())
                 if not want <= words:
                     continue
+                files = self._dedupe(files)
                 q = min(self._quality(f) for f in files)
                 if q == 0:
                     continue
@@ -105,6 +106,17 @@ class Slskd:
                 if score > best_score:
                     best, best_score = (resp["username"], files), score
         return best
+
+    def _dedupe(self, files: list[dict]) -> list[dict]:
+        """One file per track title: shared folders often hold the same album in two naming styles."""
+        best: dict[str, dict] = {}
+        for f in files:
+            stem = _parts(f["filename"])[-1].rsplit(".", 1)[0]
+            key = norm(re.sub(r"^[\d\s.\-_]+", "", stem))  # strip "01 - ", "1-01 ", "01." prefixes
+            cur = best.get(key)
+            if cur is None or (self._quality(f), f.get("size", 0)) > (self._quality(cur), cur.get("size", 0)):
+                best[key] = f
+        return list(best.values())
 
     # --- download -------------------------------------------------------------
     def download(self, username: str, files: list[dict]) -> list[Path]:
