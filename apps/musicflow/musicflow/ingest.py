@@ -47,8 +47,12 @@ def run(cfg: Config, which: list[str]) -> None:
 
     sl = None if cfg.dry_run else Slskd(cfg.slskd_url, cfg.slskd_api_key, cfg.slskd_downloads, cfg.download_timeout_s)
     got = 0
+    infra_errors = 0  # consecutive slskd/API failures: not the candidate's fault, so never mark it seen
     for name, item in queue:
         if got >= need:
+            break
+        if infra_errors >= 5:
+            log.error("slskd keeps failing (%d in a row, e.g. disconnected from Soulseek); stopping this run", infra_errors)
             break
         dest = cfg.inbox_dir / name / batch
         if isinstance(item, Track):
@@ -61,9 +65,11 @@ def run(cfg: Config, which: list[str]) -> None:
                 continue
             try:
                 got += _fetch_track(cfg, sl, item, dest, name, batch)
-            except Exception as e:  # a bad peer or a slskd hiccup must not end the whole run
+                infra_errors = 0
+            except Exception as e:  # slskd/API trouble: skip without marking seen, so it can be offered again
+                infra_errors += 1
                 log.warning("fetch failed: %s - %s (%s): %s", item.artist, item.title, name, e)
-                history.record(cfg, "not_found", source=name, artist=item.artist, title=item.title, batch=batch)
+                continue
         elif isinstance(item, Release):
             key = f"r:{item.mbid}" if item.mbid else "r:%s|%s" % (norm(item.artist), norm(item.album))
             if key in seen or (norm(item.artist), norm(item.album)) in owned_albums:
@@ -74,10 +80,11 @@ def run(cfg: Config, which: list[str]) -> None:
                 continue
             try:
                 added = _fetch_release(cfg, sl, item, dest / f"{item.artist} - {item.album}", need - got, name, batch)
+                infra_errors = 0
             except Exception as e:
+                infra_errors += 1
                 log.warning("fetch failed: %s - %s (%s): %s", item.artist, item.album, name, e)
-                history.record(cfg, "not_found", source=name, artist=item.artist, album=item.album, batch=batch)
-                added = 0
+                continue
             if added < 0:  # didn't fit: leave it unseen so it can come back when there's room
                 continue
             got += added
