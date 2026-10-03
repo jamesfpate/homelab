@@ -14,6 +14,9 @@ networks:
 #
 # Self-hosted music (see README "Music"): Navidrome serves /mnt/user/plexmedia/music.
 # Phase 2 discovery services (musicflow) are live; see README "Phase 2".
+# musicflow is built from apps/musicflow. Komodo's "Deploy on push" only redeploys a stack whose compose file
+# changed, so after changing apps/musicflow bump x-app-version in the same commit (as stacks/typing.yaml does).
+x-app-version: f798deb
 # To turn them on, delete those profile lines (here and in media.yaml) and push.
 services:
   music-assistant:
