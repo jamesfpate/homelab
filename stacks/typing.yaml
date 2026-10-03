@@ -9,7 +9,7 @@ networks:
 # Chatterbox on the ai stack (nginx proxies /tts/ -> chatterbox:8004), with the browser voice as fallback.
 # The image is built from apps/typing on deploy (pull_policy: build). Komodo's "Deploy on push" only redeploys
 # a stack whose compose file changed, so after changing apps/typing bump x-app-version below in the same commit.
-x-app-version: 7f4969e
+x-app-version: f2ad449
 services:
   typing:
     build: ../apps/typing
@@ -23,6 +23,7 @@ services:
       voice:
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=br0" # two networks (br0 + voice): without this Traefik picks one at random and may choose voice, which it can't reach
       - "traefik.http.routers.typing.rule=Host(`type.${DOMAIN}`)"
       - "traefik.http.routers.typing.entrypoints=websecure"
       - "traefik.http.routers.typing.middlewares=ipallowlist"
