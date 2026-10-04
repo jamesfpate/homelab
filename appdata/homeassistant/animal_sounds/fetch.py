@@ -52,11 +52,13 @@ QUERIES = {
 
 def normalise(raw: str) -> str:
     a = re.sub(r"[^a-z -]", "", raw.lower()).strip()
-    a = re.sub(r"^(a|an|the|baby|little|big)\s+", "", a)
+    a = re.sub(r"\s+", " ", a)
+    while (b := re.sub(r"^(a|an|the|baby|little|big|tiny|cute|my)\s+", "", a)) != a:  # "a little baby kitty"
+        a = b
     a = SYNONYMS.get(a, a)
     if a not in QUERIES and a.endswith("s") and a[:-1] in QUERIES:
         a = a[:-1]
-    return a
+    return a.replace(" ", "_")
 
 
 def seconds(path: Path) -> int:
@@ -120,7 +122,7 @@ def main() -> None:
         if not ok:
             print(json.dumps({"result": "unknown", "animal": animal}))
             return
-    print(json.dumps({"result": "ok", "animal": animal, "url": f"{BASE_URL}/{animal}.mp3", "seconds": seconds(clip)}))
+    print(json.dumps({"result": "ok", "animal": animal, "url": f"{BASE_URL}/{urllib.parse.quote(animal)}.mp3", "seconds": seconds(clip)}))
 
 
 if __name__ == "__main__":
