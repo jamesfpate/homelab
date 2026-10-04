@@ -1,6 +1,10 @@
 # Loads default set of integrations. Do not remove.
 default_config:
 
+# Feature bundles (YAML) that don't belong in the UI-managed files: packages/<name>.yaml
+homeassistant:
+  packages: !include_dir_named packages
+
 # Load frontend themes from the themes folder
 frontend:
   themes: !include_dir_merge_named themes

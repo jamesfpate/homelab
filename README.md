@@ -174,3 +174,11 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 8. `musicflow` is built from `apps/musicflow` (`pull_policy: build`). A plain redeploy reuses the old image, so after
    changing its code rebuild it (Komodo stack build/redeploy with build, or `docker compose build musicflow`).
 
+## Home Assistant extras
+- `appdata/homeassistant/packages/animal_sounds.yaml` + `animal_sounds/fetch.py`: "what sound does a cow make?" via the
+  voice agent (Ollama, Assist API). The agent calls `script.animal_sound(animal, room)` as a tool; the script plays
+  `/config/www/animals/<animal>.mp3` on the room's Music Assistant speaker, waits for it, then the agent answers in
+  words. Missing clips are fetched once from Freesound (`FREESOUND_API_KEY` in the server `.env`, passed in by
+  `home.yaml`) and cached. Expose the script to Assist once (Settings > Voice assistants > Expose). Config uses
+  `homeassistant: packages:` for YAML feature bundles; copy `packages/` and `animal_sounds/` to `/mnt/user/appdata/homeassistant/`.
+- HACS is installed (community integrations, e.g. KEF Connector for the LSX II).

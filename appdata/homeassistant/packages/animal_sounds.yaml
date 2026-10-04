@@ -1,0 +1,51 @@
+# Animal sounds for the kid. The voice agent (Ollama, Assist API) gets script.animal_sound as a tool: it normalises
+# "what do the puppies say" to animal=dog; the script plays a real clip on a Music Assistant speaker, waits for it,
+# then the agent's own words ("Dogs bark!") are spoken. Clips: /config/www/animals/<animal>.mp3, fetched once from
+# Freesound by animal_sounds/fetch.py (token in /config/animal_sounds/freesound.key) and cached.
+# Expose the script to Assist once: Settings > Voice assistants > Expose > script.animal_sound.
+shell_command:
+  animal_sound_fetch: 'python3 /config/animal_sounds/fetch.py "{{ animal | regex_replace("[^A-Za-z -]", "") }}"'
+
+script:
+  animal_sound:
+    alias: Play an animal sound
+    icon: mdi:cow
+    description: >-
+      Play the real sound an animal makes on a speaker, for a child asking what sound or noise an animal makes
+      or what an animal says. Returns result "ok" (clip played) or "unknown" (no clip for that animal).
+    fields:
+      animal:
+        description: >-
+          The animal species as ONE singular lowercase English noun, e.g. dog (not puppy or puppies),
+          cat (not kitty), cow, owl, lion, elephant, dinosaur.
+        required: true
+        selector:
+          text:
+      room:
+        description: "Where to play it: living room (default), bedroom or office."
+        required: false
+        selector:
+          select:
+            options: [living room, bedroom, office]
+    sequence:
+      - action: shell_command.animal_sound_fetch
+        data:
+          animal: "{{ animal }}"
+        response_variable: fetched
+      - variables:
+          info: "{{ fetched.stdout | from_json }}"
+          player: >-
+            {{ {'bedroom': 'media_player.bedroom_speaker_2',
+                'office': 'media_player.office_speaker_2'}.get(room | default('living room'), 'media_player.living_room_speaker_2') }}
+      - if: "{{ info.result == 'ok' }}"
+        then:
+          - action: media_player.play_media
+            target:
+              entity_id: "{{ player }}"
+            data:
+              media_content_id: "{{ info.url }}"
+              media_content_type: music
+          - delay:
+              seconds: "{{ [info.seconds | int(3), 15] | min }}"
+      - stop: done
+        response_variable: info

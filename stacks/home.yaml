@@ -23,6 +23,7 @@ services:
       #- /dev/ttyACM0:/dev/ttyACM0 # Zooz 800 Z-Wave
     environment:
       - TZ=${TZ}
+      - FREESOUND_API_KEY=${FREESOUND_API_KEY} # animal sound clips (appdata/homeassistant/animal_sounds/fetch.py)
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=br0" # must match HA trusted proxy 192.168.1.2
