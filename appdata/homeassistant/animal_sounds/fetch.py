@@ -72,16 +72,16 @@ def fetch(animal: str, dest: Path) -> bool:
     token = os.environ.get("FREESOUND_API_KEY", "").strip() or (KEY_FILE.read_text().strip() if KEY_FILE.exists() else "")
     if not token:
         return False
-    # A few seconds of sound, not a single bark: prefer 5-15 s well-rated clips, then relax duration/licence,
-    # then try the bare animal name in case the "cow moo"-style hint finds nothing.
+    # A few seconds of sound, not a single bark: at least 4 s, and among the best-rated hits take the longest
+    # (up to 15 s). Then relax duration/licence, then try the bare animal name if the "cow moo" hint finds nothing.
     results = []
-    for query, flt in [(QUERIES.get(animal, f"{animal} sound"), "duration:[5 TO 15] license:(\"Creative Commons 0\" OR \"Attribution\")"),
+    for query, flt in [(QUERIES.get(animal, f"{animal} sound"), "duration:[4 TO 15] license:(\"Creative Commons 0\" OR \"Attribution\")"),
                        (QUERIES.get(animal, f"{animal} sound"), "duration:[3 TO 20]"),
                        (animal, "duration:[3 TO 20]")]:
         q = urllib.parse.urlencode({
             "query": query,
             "filter": flt,
-            "fields": "id,name,previews,avg_rating,num_ratings",
+            "fields": "id,name,previews,avg_rating,num_ratings,duration",
             "sort": "rating_desc",
             "page_size": 5,
             "token": token,
@@ -91,6 +91,7 @@ def fetch(animal: str, dest: Path) -> bool:
             results = json.load(r).get("results", [])
         if results:
             break
+    results.sort(key=lambda h: -min(float(h.get("duration") or 0), 15))  # longest first, 15 s cap
     for hit in results:
         url = (hit.get("previews") or {}).get("preview-hq-mp3")
         if not url:
