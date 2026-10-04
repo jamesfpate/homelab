@@ -75,7 +75,7 @@ services:
       - "traefik.http.routers.prowlarr.rule=Host(`indexer.${DOMAIN}`)"
       - "traefik.http.routers.prowlarr.entrypoints=websecure"
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
-      #- "traefik.http.routers.prowlarr.middlewares=ipallowlist"
+      - "traefik.http.routers.prowlarr.middlewares=ipallowlist" # no app login (External); LAN + VPN only
       - "traefik.http.services.prowlarr.loadbalancer.passHostHeader=true"
       - "traefik.http.services.prowlarr.loadbalancer.server.scheme=http"
 
@@ -104,7 +104,7 @@ services:
       - "traefik.http.routers.sonarr.rule=Host(`tv.${DOMAIN}`)"
       - "traefik.http.routers.sonarr.entrypoints=websecure"
       - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
-      #- "traefik.http.routers.sonarr.middlewares=ipallowlist"
+      - "traefik.http.routers.sonarr.middlewares=ipallowlist" # no app login (External); LAN + VPN only
       - "traefik.http.services.sonarr.loadbalancer.passHostHeader=true"
       - "traefik.http.services.sonarr.loadbalancer.server.scheme=http"
 
@@ -132,7 +132,7 @@ services:
       - "traefik.http.routers.radarr.rule=Host(`movies.${DOMAIN}`)"
       - "traefik.http.routers.radarr.entrypoints=websecure"
       - "traefik.http.services.radarr.loadbalancer.server.port=7878"
-      #- "traefik.http.routers.radarr.middlewares=ipallowlist"
+      - "traefik.http.routers.radarr.middlewares=ipallowlist" # no app login (External); LAN + VPN only
       - "traefik.http.services.radarr.loadbalancer.passHostHeader=true"
       - "traefik.http.services.radarr.loadbalancer.server.scheme=http"
 
@@ -161,7 +161,7 @@ services:
       - "traefik.http.routers.bazarr.rule=Host(`subtitles.${DOMAIN}`)"
       - "traefik.http.routers.bazarr.entrypoints=websecure"
       - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
-      #- "traefik.http.routers.bazarr.middlewares=ipallowlist"
+      - "traefik.http.routers.bazarr.middlewares=ipallowlist" # no app login (External); LAN + VPN only
       - "traefik.http.services.bazarr.loadbalancer.passHostHeader=true"
       - "traefik.http.services.bazarr.loadbalancer.server.scheme=http"
   
@@ -214,7 +214,7 @@ services:
       - "traefik.http.routers.sabnzbd.rule=Host(`usenet.${DOMAIN}`)"
       - "traefik.http.routers.sabnzbd.entrypoints=websecure"
       - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
-      #- "traefik.http.routers.sabnzbd.middlewares=ipallowlist"
+      - "traefik.http.routers.sabnzbd.middlewares=ipallowlist" # no app login (External); LAN + VPN only
       - "traefik.http.services.sabnzbd.loadbalancer.passHostHeader=true"
       - "traefik.http.services.sabnzbd.loadbalancer.server.scheme=http"
   
@@ -241,7 +241,7 @@ services:
       - "traefik.http.routers.lidarr.rule=Host(`albums.${DOMAIN}`)"
       - "traefik.http.routers.lidarr.entrypoints=websecure"
       - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
-      #- "traefik.http.routers.lidarr.middlewares=ipallowlist"
+      - "traefik.http.routers.lidarr.middlewares=ipallowlist" # no app login (External); LAN + VPN only
       - "traefik.http.services.lidarr.loadbalancer.passHostHeader=true"
       - "traefik.http.services.lidarr.loadbalancer.server.scheme=http"
 

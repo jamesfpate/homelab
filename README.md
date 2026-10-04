@@ -30,6 +30,9 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
   - 192.168.70.x - Cameras (br0.70; UniFi Protect only, no Docker network)
 - Container IPs are static (see Services below).
 - HTTP services are routed via Traefik labels as `<service>.<domain>`; Traefik handles TLS (wildcard cert, Cloudflare DNS-01; needs `CF_API_EMAIL` and `CF_DNS_API_TOKEN`) and the LAN IP allowlist.
+- Internal apps have no login of their own where possible (Radarr/Sonarr/Lidarr/Prowlarr/Bazarr: auth method External); the
+  `ipallowlist` middleware (main VLAN 192.168.1.0/24 + VPN 192.168.30.0/24) is the access control. Logins stay on Komodo,
+  Navidrome (per-user data), Plex and Seerr.
 - Secrets/env live only in `/mnt/user/appdata/env/.env` on the server, never in the repo. Compose files assume Unraid paths; app data lives in `/mnt/user/appdata/<service>/`.
 - Pin versions via image tags; databases stay on a fixed major.
 - Unraid's `/etc` is RAM-backed, so Komodo's keys, backups and periphery root live under `/mnt/user/appdata/komodo/`.
