@@ -9,7 +9,7 @@ networks:
 # Chatterbox on the ai stack (nginx proxies /tts/ -> chatterbox:8004), with the browser voice as fallback.
 # The image is built from apps/typing on deploy (pull_policy: build). Komodo's "Deploy on push" only redeploys
 # a stack whose compose file changed, so after changing apps/typing bump x-app-version below in the same commit.
-x-app-version: f2ad449
+x-app-version: f4d8b88
 services:
   typing:
     build: ../apps/typing

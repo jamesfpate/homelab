@@ -242,10 +242,13 @@ function say(text, { interrupt = true, rate = 0.85 } = {}) {
 function hush() { window.speechSynthesis?.cancel(); queue = []; player.onended = null; if (!player.paused) player.pause(); }
 // Warm the cache with what he'll hear most, one phrase at a time in the background.
 function warmCache() {
-  const phrases = [...Object.keys(ABC), ...Object.values(ABC).map(v => v[1]), ...NUMWORDS, "Try again!", "Great job!"];
+  const L = Object.keys(ABC);
+  const phrases = [...L.map(k => `${k}. ${ABC[k][1][0].toUpperCase() + ABC[k][1].slice(1)}!`), ...L.map(k => `Press ${k}.`),
+                   ...L.map(k => `${k}! ${ABC[k][1][0].toUpperCase() + ABC[k][1].slice(1)}.`), ...NUMWORDS, "Try again!"];
   (async () => { for (const t of phrases) { if (Date.now() < ttsDownUntil) return; await fetchClip(t).catch(() => {}); await new Promise(r => setTimeout(r, 150)); } })();
 }
-const sayChar = ch => say(/\d/.test(ch) ? NUMWORDS[+ch] : ch);
+const sayChar = ch => say(/\d/.test(ch) ? NUMWORDS[+ch] : `The letter ${ch}.`);
+const sayLetterWord = ch => say(ABC[ch] ? `${ch}. ${ABC[ch][1][0].toUpperCase() + ABC[ch][1].slice(1)}!` : `The letter ${ch}.`);
 
 /* ---------- effects ---------- */
 function burst(x, y, n = 14, emoji = null) {
@@ -321,8 +324,7 @@ const free = {
     this.text += k; this.colors.push(color); this.renderTyped();
     this.bigChar(k, color);
     tone(noteFor(k));
-    sayChar(k);
-    if (ABC[k]) this.idle = later(() => say(ABC[k][1], { interrupt: false }), 900);
+    if (ABC[k]) sayLetterWord(k); else sayChar(k);
   },
   bigChar(k, color) {
     const el = document.createElement("div");
@@ -393,7 +395,7 @@ const balloons = {
       burst(x, y, 16, ABC[k][0]);
     });
     popSound(); addStar();
-    say(`${k}! ${ABC[k][1]}`);
+    say(`${k}! ${ABC[k][1][0].toUpperCase() + ABC[k][1].slice(1)}.`);
     later(() => this.spawn(), 500);
   },
 };
@@ -414,7 +416,7 @@ const words = {
     this.idle = later(() => {
       const tile = stage.querySelectorAll(".lt")[this.pos]; if (!tile || this.busy) return;
       tile.classList.remove("wiggle"); void tile.offsetWidth; tile.classList.add("wiggle");
-      say(`Press ${this.word[this.pos]}`); this.nudge();
+      say(`Press ${this.word[this.pos]}.`); this.nudge();
     }, HINT_MS);
   },
   mark() {
@@ -431,9 +433,9 @@ const words = {
     const tile = stage.querySelectorAll(".lt")[this.pos];
     if (k !== need) {
       tile.classList.remove("wiggle"); void tile.offsetWidth; tile.classList.add("wiggle");
-      boop(); say(need); return;
+      boop(); say(`Press ${need}.`); return;
     }
-    tone(PENTA[this.pos + 3], 0.3); sayChar(k);
+    tone(PENTA[this.pos + 3], 0.3);
     burst(...centre(tile), 10);
     this.pos++; this.mark(); this.nudge();
     if (this.pos === this.word.length) {
