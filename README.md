@@ -64,6 +64,8 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 - Gateway mDNS Proxy: Custom, main + IoT, all services (Spotify Connect / Cast / AirPlay discovery across VLANs).
 - IGMP snooping off on main and IoT (multicast discovery reliability).
 - Internal names are per-host UDM local DNS records (A -> 192.168.1.2, Traefik); no wildcard. New Traefik service = add a record.
+- Public DNS also has `*.jamespate.net -> 192.168.1.2` (Cloudflare, DNS-only), so the internal names resolve on devices whose DNS
+  bypasses the UDM (the work laptop via Zscaler); the address is only reachable on the LAN/VPN. Explicit records (`wg`, `request`) win.
 - Keep 192.168.1.50-53 and other container IPs outside the UDM DHCP range (Docker assigns them, UDM doesn't know).
 - If casting to the Onkyo wakes the TV: LG SIMPLINK Auto Power Sync off (keeps ARC/volume control).
 
