@@ -15,7 +15,7 @@ services:
       - TZ=America/New_York
       - CF_API_EMAIL=${EMAIL}
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
-    image: traefik:3
+    image: traefik:v3.7.14 # pinned: the 03:00 auto-update recreated Traefik on 2026-10-07 and it never started (40 h outage). Bump deliberately.
     container_name: traefik
     networks:
       vlan-private:

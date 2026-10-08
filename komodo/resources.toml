@@ -24,7 +24,7 @@ repo = "jamesfpate/homelab"
 branch = "main"
 file_paths = ["stacks/proxy.yaml"]
 additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
-auto_update = true
+auto_update = false # Traefik is pinned (stacks/proxy.yaml); everything depends on it
 
 [[stack]]
 name = "core"

@@ -34,7 +34,8 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
   `ipallowlist` middleware (main VLAN 192.168.1.0/24 + VPN 192.168.3.0/24) is the access control. Logins stay on Komodo,
   Navidrome (per-user data), Plex and Seerr.
 - Secrets/env live only in `/mnt/user/appdata/env/.env` on the server, never in the repo. Compose files assume Unraid paths; app data lives in `/mnt/user/appdata/<service>/`.
-- Pin versions via image tags; databases stay on a fixed major.
+- Pin versions via image tags; databases stay on a fixed major. Traefik is pinned too and excluded from the 03:00 auto-update
+  (a recreated Traefik that fails to start takes every LAN app down; upgrade it deliberately and check it came back).
 - Unraid's `/etc` is RAM-backed, so Komodo's keys, backups and periphery root live under `/mnt/user/appdata/komodo/`.
 - GPUs: Intel iGPU for Plex transcoding; NVIDIA RTX PRO 4000 Blackwell (24 GB, Unraid Nvidia Driver plugin, open kernel module) for the ai stack via `runtime: nvidia`.
 - Camera person detection is done by UniFi Protect on the UDM SE and surfaced in Home Assistant via the UniFi Protect integration.
