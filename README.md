@@ -15,7 +15,8 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `typing.yaml` - kids typing game (`apps/typing`, static page, internal only)
 - `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`). "Deploy on push" only
   redeploys a stack whose compose file changed, so an app-only change also needs a bump of the stack's `x-app-version`.
-- `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update)
+- `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update),
+  `container-watchdog.sh` (every 5 min: start containers stuck in "created", restart an unhealthy Traefik)
 - `appdata/` - config files to copy into `/mnt/user/appdata/`
 - `.local/` - private working notes (gitignored)
 
@@ -57,6 +58,8 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 - pushing compose changes to `main` deploys them within ~5 minutes (Komodo "Deploy on push" procedure).
 - container images auto-update daily at 03:00 (Komodo "Global Auto Update"). Pin a version in the image tag to hold it back.
 - Komodo itself (`compose/infra.yaml`) is updated daily at 04:00 by `scripts/update-komodo.sh`, run from the Unraid User Scripts plugin (installs infra.yaml from main after validating it, then pulls new images).
+- `scripts/container-watchdog.sh` runs every 5 minutes from User Scripts (`*/5 * * * *`): Docker's restart policy ignores a
+  container that was recreated but never started, which is how a Traefik auto-update caused a 40 h outage.
 
 ## UniFi network notes
 - VLANs 20/40/60/70 have "Isolate Network" on (auto "Isolated Networks" block policies, priority 30000).
