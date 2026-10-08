@@ -29,6 +29,8 @@ services:
       - "32469:32469"      # DLNA media transfer
     devices:
       - /dev/dri:/dev/dri  # For Intel QuickSync/Graphics
+    tmpfs:
+      - /transcode:size=16g # transcode scratch in RAM (Plex > Transcoder > temporary directory = /transcode); segments were going to the container layer on the array
     volumes:
       - /mnt/user/appdata/plex:/config
       - /mnt/user/plexmedia/movies:/movies
