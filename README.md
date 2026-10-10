@@ -6,7 +6,7 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
 - `stacks/` - service stacks, declared in `komodo/resources.toml` and deployed by Komodo's Resource Sync:
   - `proxy.yaml` - Traefik reverse proxy
   - `core.yaml` - core infrastructure (Postgres, pgAdmin, dyndns, Cloudflare Tunnel)
-  - `home.yaml` - Home Assistant
+  - `home.yaml` - Home Assistant, Mosquitto (MQTT broker on the IoT VLAN)
   - `media.yaml` - Plex, *arr stack (incl. Lidarr), Seerr, sabnzbd, Pinchflat; gluetun + slskd (dormant, see Music)
   - `music.yaml` - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers); Navidrome; musicflow (dormant, see Music)
   - `ai.yaml` - local AI backends on the RTX GPU (Ollama, Whisper, Chatterbox, Kokoro)
@@ -77,6 +77,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.1 - UniFi Dream Machine SE (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  
 192.168.1.41 - KVM (remote console for the Unraid server)  
 192.168.1.42 - Unraid server (iris) - unraid.domain.com  
+192.168.40.60 - Ulanzi TC002 clock, AWTRIX NG (IoT Wi-Fi, UniFi DHCP reservation)  
 
 ## Services
 192.168.1.2 - Traefik - traefik.domain.com  
@@ -90,6 +91,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.26 - typing (kids typing game, internal only) - type.domain.com  
 192.168.1.27 - musicflow dashboard (inbox by source, keep rates) - inbox.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
+192.168.40.41 - Mosquitto MQTT broker (:1883, login from `.env`)  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
@@ -188,3 +190,10 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
   `home.yaml`) and cached. Expose the script to Assist once (Settings > Voice assistants > Expose). Config uses
   `homeassistant: packages:` for YAML feature bundles; copy `packages/` and `animal_sounds/` to `/mnt/user/appdata/homeassistant/`.
 - HACS is installed (community integrations, e.g. KEF Connector for the LSX II).
+- MQTT: Mosquitto (`home.yaml`, 192.168.40.41:1883) on the IoT VLAN, since IoT devices can't initiate into main.
+  Set `MQTT_USER` / `MQTT_PASSWORD` in the server `.env` and `mkdir -p /mnt/user/appdata/mosquitto/data`; the
+  password file is rebuilt from `.env` on every start. HA: Settings > Devices & services > Add > MQTT, broker
+  `192.168.40.41`, port 1883, same login.
+- Ulanzi TC002 clock (AWTRIX NG community port, sanderdw/awtrix-ng-tc002): on IoT Wi-Fi at 192.168.40.60.
+  Clock web UI > System > MQTT: host `192.168.40.41`, port 1883, the MQTT login, Home Assistant discovery on.
+  It then appears in HA as a device, with the knob as an event entity. Turn on the web login (System > Web).

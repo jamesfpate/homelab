@@ -34,3 +34,36 @@ services:
       - "traefik.http.services.homeassistant.loadbalancer.passHostHeader=true"
       - "traefik.http.services.homeassistant.loadbalancer.server.scheme=http"
     restart: unless-stopped
+
+  mosquitto: # MQTT broker for IoT devices (AWTRIX/Ulanzi clock) <-> Home Assistant
+    # On the IoT VLAN because IoT devices can't initiate into main; HA reaches it via its IoT leg.
+    image: eclipse-mosquitto:2.0.22
+    container_name: mosquitto
+    restart: unless-stopped
+    networks:
+      vlan-iot:
+        ipv4_address: 192.168.40.41
+    volumes:
+      - /mnt/user/appdata/mosquitto/data:/mosquitto/data
+    environment:
+      - TZ=${TZ}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+    configs:
+      - source: mosquitto_conf
+        target: /mosquitto/config/mosquitto.conf
+    # Rebuild the password file from .env on every start, then run the broker (it drops to the mosquitto user).
+    command: >
+      sh -c 'mosquitto_passwd -b -c /mosquitto/data/passwd "$$MQTT_USER" "$$MQTT_PASSWORD"
+      && chown mosquitto:mosquitto /mosquitto/data/passwd && chmod 0700 /mosquitto/data/passwd
+      && exec mosquitto -c /mosquitto/config/mosquitto.conf'
+
+configs:
+  mosquitto_conf:
+    content: |
+      listener 1883
+      allow_anonymous false
+      password_file /mosquitto/data/passwd
+      persistence true
+      persistence_location /mosquitto/data/
+      log_dest stdout
