@@ -1,0 +1,23 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+
+services:
+  # Part Bench: parametric CAD in the browser (replicad/OpenCascade), internal only (no Cloudflare tunnel route).
+  # Source + image build live in the private jamesfpate/fusion repo; GitHub Actions publishes ghcr.io/jamesfpate/fusion
+  # and Komodo pulls it with the ghcr.io registry account. The tag is pinned to a commit: bump it here to roll out
+  # (Deploy on push redeploys within ~5 min).
+  fusion:
+    image: ghcr.io/jamesfpate/fusion:92b86ab80f7e3c619ed12dfc270af3f6282baa37
+    container_name: fusion
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.29
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fusion.rule=Host(`fusion.${DOMAIN}`)"
+      - "traefik.http.routers.fusion.entrypoints=websecure"
+      - "traefik.http.routers.fusion.middlewares=ipallowlist"
+      - "traefik.http.services.fusion.loadbalancer.server.port=80"

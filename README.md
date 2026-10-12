@@ -13,6 +13,7 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
   - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
   - `typing.yaml` - kids typing game (`apps/typing`, static page, internal only)
+  - `fusion.yaml` - Part Bench, parametric CAD in the browser (private ghcr.io image pinned to a commit, internal only)
 - `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`). "Deploy on push" only
   redeploys a stack whose compose file changed, so an app-only change also needs a bump of the stack's `x-app-version`.
 - `scripts/` - `create-networks.sh` (one-time VLAN setup), `update-komodo.sh` (daily Komodo update),
@@ -89,6 +90,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.26 - typing (kids typing game, internal only) - type.domain.com  
 192.168.1.27 - musicflow dashboard (inbox by source, keep rates) - inbox.domain.com  
+192.168.1.29 - fusion (Part Bench parametric CAD, internal only) - fusion.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  

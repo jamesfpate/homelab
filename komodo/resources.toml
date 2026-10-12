@@ -77,6 +77,19 @@ registry_account = "jamesfpate"
 auto_update = true
 
 [[stack]]
+name = "fusion"
+tags = ["homelab"]
+[stack.config]
+server = "Unraid"
+project_name = "fusion"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/fusion.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+registry_provider = "ghcr.io" # private image: uses the ghcr.io registry account in Komodo
+registry_account = "jamesfpate"
+
+[[stack]]
 name = "ai"
 tags = ["homelab"]
 [stack.config]
