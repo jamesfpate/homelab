@@ -9,7 +9,7 @@ services:
   # and Komodo pulls it with the ghcr.io registry account. The tag is pinned to a commit: bump it here to roll out
   # (Deploy on push redeploys within ~5 min).
   fusion:
-    image: ghcr.io/jamesfpate/fusion:c4a95ba67d47972642edf85375dc1b4b7d61b480
+    image: ghcr.io/jamesfpate/fusion:fd8f42281cc1b932c44fc123e72ea7f07809a5fb
     container_name: fusion
     restart: unless-stopped
     networks:
