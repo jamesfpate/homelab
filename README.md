@@ -92,6 +92,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.27 - musicflow dashboard (inbox by source, keep rates) - inbox.domain.com  
 192.168.1.29 - fusion (Part Bench parametric CAD, internal only) - fusion.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
+192.168.1.31 / 192.168.40.31 - Mosquitto MQTT (HA <-> AWTRIX clock; MQTT_USER/MQTT_PASS in .env)  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
@@ -190,3 +191,5 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
   `home.yaml`) and cached. Expose the script to Assist once (Settings > Voice assistants > Expose). Config uses
   `homeassistant: packages:` for YAML feature bundles; copy `packages/` and `animal_sounds/` to `/mnt/user/appdata/homeassistant/`.
 - HACS is installed (community integrations, e.g. KEF Connector for the LSX II).
+- MQTT: Mosquitto in the `home` stack (192.168.1.31 for HA, 192.168.40.31 for IoT devices). HA's MQTT integration points at
+  192.168.1.31 with `MQTT_USER`/`MQTT_PASS`; AWTRIX points at 192.168.40.31 with HA discovery on. Config file in `appdata/mosquitto/`.
