@@ -7,7 +7,7 @@ networks:
 
 # mta-trains is built from apps/mta. Komodo's "Deploy on push" only redeploys a stack whose compose file changed, so after
 # changing apps/mta bump x-app-version in the same commit.
-x-app-version: 0025991
+x-app-version: 3b56489-2
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
@@ -78,6 +78,7 @@ services:
       - ROUTE=Q
       - STOP_ID=D27N # Beverley Rd, northbound (Manhattan-bound); Brighton line stop ids D24-D29 = Prospect Park..Newkirk
       - TOPIC=transit/beverley_q_manhattan
+      - MAX_TRAINS=6 # the clock drops anything under the 10 min walk and shows the next two
       - POLL_S=30
       - MQTT_HOST=192.168.1.31
       - MQTT_USER=${MQTT_USER}
@@ -98,6 +99,7 @@ services:
       - ROUTE=F
       - STOP_ID=F27N # Church Av (F/G), northbound
       - TOPIC=transit/church_f_north
+      - MAX_TRAINS=6
       - POLL_S=30
       - MQTT_HOST=192.168.1.31
       - MQTT_USER=${MQTT_USER}

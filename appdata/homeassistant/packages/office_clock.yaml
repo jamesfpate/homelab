@@ -1,7 +1,7 @@
-# Office clock (Ulanzi TC002, AWTRIX NG, MQTT prefix "officeclock"). HA pushes three apps every minute:
-# weather (now + today), Q trains to Manhattan from Beverley Rd (sensor fed by the mta-trains container), and
-# whatever is playing on any speaker. Time is the clock's built-in app. Order/disable of apps is set once on the
-# clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
+# Office clock (Ulanzi TC002, AWTRIX NG, MQTT prefix "officeclock"). HA pushes apps every minute: weather (coloured
+# temperature + condition), next catchable Q and F trains (sensors fed by the mta-trains containers; trains under the
+# 10 min walk are skipped), and whatever is playing on a speaker or the TV. Time is the clock's built-in app. Order/disable
+# of apps is set once on the clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
 mqtt:
   sensor:
     - name: "Q Beverley Rd to Manhattan"
@@ -127,24 +127,27 @@ automation:
           rain_today: >-
             {{ today.condition | default('') in ['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy', 'hail']
                or (today.precipitation | default(0) | float(0)) > 0.05 }}
-          weather_text: >-
-            {{ temp }}° {{ words }}{{ ', rain today' if rain_today and words not in ['Rain', 'Heavy rain', 'Storms'] else '' }}
+          temp_color: >-
+            {% if temp > 80 %}#FF3B30{% elif temp > 75 %}#FFD60A{% elif temp > 65 %}#34C759{% elif temp < 60 %}#4DA3FF{% else %}#FFFFFF{% endif %}
+          words_color: >-
+            {% set c = states('weather.forecast_home') %}
+            {% set m = {'sunny': '#FFD60A', 'clear-night': '#4DA3FF', 'partlycloudy': '#B0C4DE', 'cloudy': '#9E9E9E', 'fog': '#9E9E9E',
+                        'rainy': '#1E90FF', 'pouring': '#0057D9', 'lightning': '#C77DFF', 'lightning-rainy': '#C77DFF',
+                        'snowy': '#FFFFFF', 'snowy-rainy': '#D8EEFF', 'hail': '#D8EEFF', 'windy': '#7FDBFF', 'windy-variant': '#7FDBFF'} %}
+            {{ m.get(c, '#FFFFFF') }}
+          weather_text:
+            - text: "{{ temp }}° "
+              color: "{{ temp_color }}"
+            - text: "{{ words }}{{ ', rain today' if rain_today and words not in ['Rain', 'Heavy rain', 'Storms'] else '' }}"
+              color: "{{ words_color }}"
           q_next: >-
-            {% set t = state_attr('sensor.q_beverley_rd_to_manhattan', 'times') | default([], true) %}
-            {% set t = (t if t is iterable and t is not string else []) | select('string') | map('as_datetime') | select('datetime') | select('gt', now()) | list %}
-            {{ 'N/A' if t | count == 0 else (((t[0] - now()).total_seconds() / 60) | round(0) | int ~ 'm') }}
+            {% set t = (state_attr('sensor.q_beverley_rd_to_manhattan', 'times') or []) | map('as_timestamp', none) | select('number') | list %}
+            {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
+            {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join('m ') ~ 'm') }}
           f_next: >-
-            {% set t = state_attr('sensor.f_church_av_to_manhattan', 'times') | default([], true) %}
-            {% set t = (t if t is iterable and t is not string else []) | select('string') | map('as_datetime') | select('datetime') | select('gt', now()) | list %}
-            {{ 'N/A' if t | count == 0 else (((t[0] - now()).total_seconds() / 60) | round(0) | int ~ 'm') }}
-          tv_playing: >-
-            {% set plex = states.media_player | selectattr('entity_id', 'search', 'plex') | selectattr('state', 'eq', 'playing') | list %}
-            {% set tv = 'media_player.living_room_tv' %}
-            {% if plex | count > 0 and plex[0].attributes.media_title %}
-              {% set p = plex[0].attributes %}{{ 'TV: ' ~ (p.media_series_title ~ ' - ' if p.media_series_title else '') ~ p.media_title }}
-            {% elif (is_state(tv, 'on') or is_state(tv, 'playing')) and state_attr(tv, 'media_title') %}
-              {{ 'TV: ' ~ state_attr(tv, 'media_title') }}
-            {% endif %}
+            {% set t = (state_attr('sensor.f_church_av_to_manhattan', 'times') or []) | map('as_timestamp', none) | select('number') | list %}
+            {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
+            {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join('m ') ~ 'm') }}
           playing: "{{ states('sensor.now_playing') }}"
       - action: mqtt.publish
         data:
@@ -153,11 +156,11 @@ automation:
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainq
-          payload: '{{ {"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "scroll": {"mode": "static"}, "durationMs": 5000, "lifetimeMs": 300000} | to_json }}'
+          payload: '{{ {"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "durationMs": 6000, "lifetimeMs": 300000} | to_json }}'
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainf
-          payload: '{{ {"text": "F: " ~ f_next, "textColor": "#FF6319", "scroll": {"mode": "static"}, "durationMs": 5000, "lifetimeMs": 300000} | to_json }}'
+          payload: '{{ {"text": "F: " ~ f_next, "textColor": "#FF6319", "durationMs": 6000, "lifetimeMs": 300000} | to_json }}'
       - variables:
           show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else (tv_playing | trim) }}"
       - if: "{{ show | trim != '' }}"

@@ -44,7 +44,8 @@ def next_arrivals() -> list[float]:
 
 
 def main() -> None:
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="mta-trains")
+    # Client id must be unique per watcher, or the broker drops the other one every second (and fires its "offline" will).
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="mta-" + TOPIC.replace("/", "-"))
     client.username_pw_set(os.environ["MQTT_USER"], os.environ["MQTT_PASS"])
     client.will_set(TOPIC + "/status", "offline", retain=True)
     client.connect(os.environ.get("MQTT_HOST", "127.0.0.1"), int(os.environ.get("MQTT_PORT", "1883")), keepalive=60)
