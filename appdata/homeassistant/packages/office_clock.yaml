@@ -154,6 +154,15 @@ automation:
             {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
             {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join('m ') ~ 'm') }}
           playing: "{{ states('sensor.now_playing') }}"
+          tv_playing: >-
+            {# Plex client on the living room TV only (entity appears after the first play; name comes from the Plex client) #}
+            {% set plex = states.media_player | selectattr('entity_id', 'search', 'plex') | selectattr('entity_id', 'search', 'tv|lg|living') | selectattr('state', 'eq', 'playing') | list %}
+            {% set tv = 'media_player.living_room_tv' %}
+            {% if plex | count > 0 and plex[0].attributes.media_title %}
+              {% set p = plex[0].attributes %}{{ 'TV: ' ~ (p.media_series_title ~ ' - ' if p.media_series_title else '') ~ p.media_title }}
+            {% elif (is_state(tv, 'on') or is_state(tv, 'playing')) and state_attr(tv, 'media_title') %}
+              {{ 'TV: ' ~ state_attr(tv, 'media_title') }}
+            {% endif %}
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/weather
