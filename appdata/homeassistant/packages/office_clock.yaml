@@ -1,5 +1,5 @@
-# Office clock (Ulanzi TC002, AWTRIX NG, MQTT prefix "officeclock"). HA pushes apps every minute: weather (coloured
-# temperature + condition), next catchable Q and F trains (sensors fed by the mta-trains containers; trains under the
+# Office clock (Ulanzi TC002, AWTRIX NG, MQTT prefix "officeclock"). HA pushes apps every minute: weather (coloured, still icon, 7:30-9:00 only
+# temperature + condition), next catchable Q (7:45-9:00) and F (8:15-9:00) trains (sensors fed by the mta-trains containers; trains under the
 # 10 min walk are skipped), and what the living room receiver or TV is playing. Time is the clock's built-in app. Order/disable
 # of apps is set once on the clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
 mqtt:
@@ -83,6 +83,7 @@ automation:
 
   - alias: "Office clock: stop the knob switching apps while the TV is on"
     id: office_clock_block_navigation
+    mode: restart
     triggers:
       - trigger: state
         entity_id: media_player.living_room_tv
@@ -151,6 +152,11 @@ automation:
             {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
             {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join('m ') ~ 'm') }}
           playing: "{{ states('sensor.now_playing') }}"
+          # show windows (local time, every day): weather 7:30-9:00, Q 7:45-9:00, F 8:15-9:00
+          hm: "{{ now().hour * 60 + now().minute }}"
+          show_wx: "{{ 7*60+30 <= hm < 9*60 }}"
+          show_q: "{{ 7*60+45 <= hm < 9*60 }}"
+          show_f: "{{ 8*60+15 <= hm < 9*60 }}"
           tv_playing: >-
             {# Plex client on the living room TV only (entity appears after the first play; name comes from the Plex client) #}
             {% set plex = states.media_player | selectattr('entity_id', 'search', 'plex') | selectattr('entity_id', 'search', 'tv|lg|living') | selectattr('state', 'eq', 'playing') | list %}
@@ -161,15 +167,15 @@ automation:
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/weather
-          payload: '{{ {"text": weather_text, "icon": wx_icon, "durationMs": 7000, "lifetimeMs": 300000} | to_json }}'
+          payload: '{{ ({"text": weather_text, "icon": wx_icon, "iconMode": "push", "scroll": {"repeat": 1}, "durationMs": 7000, "lifetimeMs": 300000} | to_json) if show_wx else "" }}'
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainq
-          payload: '{{ {"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "durationMs": 6000, "lifetimeMs": 300000} | to_json }}'
+          payload: '{{ ({"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "scroll": {"repeat": 1}, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_q else "" }}'
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainf
-          payload: '{{ {"text": "F: " ~ f_next, "textColor": "#FF6319", "durationMs": 6000, "lifetimeMs": 300000} | to_json }}'
+          payload: '{{ ({"text": "F: " ~ f_next, "textColor": "#FF6319", "scroll": {"repeat": 1}, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_f else "" }}'
       - variables:
           show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else (tv_playing | trim) }}"
       - if: "{{ show | trim != '' }}"
@@ -177,7 +183,7 @@ automation:
           - action: mqtt.publish
             data:
               topic: officeclock/cmd/apps/pushed/nowplaying
-              payload: '{{ {"text": show | trim, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
+              payload: '{{ {"text": show | trim, "scroll": {"repeat": 1}, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
         else:
           - action: mqtt.publish
             data:
