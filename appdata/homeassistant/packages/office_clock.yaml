@@ -1,0 +1,173 @@
+# Office clock (Ulanzi TC002, AWTRIX NG, MQTT prefix "officeclock"). HA pushes three apps every minute:
+# weather (now + today), Q trains to Manhattan from Beverley Rd (sensor fed by the mta-trains container), and
+# whatever is playing on any speaker. Time is the clock's built-in app. Order/disable of apps is set once on the
+# clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
+mqtt:
+  sensor:
+    - name: "Q Beverley Rd to Manhattan"
+      unique_id: q_beverley_manhattan
+      state_topic: transit/beverley_q_manhattan
+      value_template: "{{ value_json.minutes[0] if value_json.minutes else 'none' }}"
+      json_attributes_topic: transit/beverley_q_manhattan
+      availability_topic: transit/beverley_q_manhattan/status
+      icon: mdi:subway-variant
+    - name: "F Church Av to Manhattan"
+      unique_id: f_church_manhattan
+      state_topic: transit/church_f_north
+      value_template: "{{ value_json.minutes[0] if value_json.minutes else 'none' }}"
+      json_attributes_topic: transit/church_f_north
+      availability_topic: transit/church_f_north/status
+      icon: mdi:subway-variant
+
+template:
+  - sensor:
+      - name: "Now playing"
+        unique_id: now_playing_any_speaker
+        icon: mdi:music-note
+        state: >-
+          {% set ns = namespace(t='') %}
+          {% for p in ['media_player.office_speaker_2', 'media_player.living_room_speaker_2', 'media_player.bedroom_speaker_2',
+                       'media_player.lsx_ii_053ada_2', 'media_player.lsx_ii_053ada', 'media_player.satellite1_4f31a0_sat1_media_player',
+                       'media_player.receiver_2', 'media_player.tx_nr7100'] %}
+            {% if ns.t == '' and is_state(p, 'playing') and state_attr(p, 'media_title') %}
+              {% set artist = state_attr(p, 'media_artist') %}
+              {% set ns.t = (artist ~ ' - ' if artist else '') ~ state_attr(p, 'media_title') %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.t[:120] if ns.t else 'nothing' }}
+
+automation:
+  - alias: "Office clock: knob and buttons control the TV while it is on"
+    id: office_clock_tv_controls
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id: event.office_clock_knob
+        id: knob
+      - trigger: state
+        entity_id: binary_sensor.office_clock_button_right
+        to: "on"
+        id: plus
+      - trigger: state
+        entity_id: binary_sensor.office_clock_button_left
+        to: "on"
+        id: minus
+      - trigger: state
+        entity_id: binary_sensor.office_clock_button_select
+        to: "on"
+        id: select
+    conditions:
+      - condition: state
+        entity_id: media_player.living_room_tv
+        state: "on"
+    actions:
+      - variables:
+          turn: "{{ state_attr('event.office_clock_knob', 'event_type') }}"
+      - choose:
+          - conditions: "{{ trigger.id == 'plus' or (trigger.id == 'knob' and turn == 'cw') }}"
+            sequence:
+              - action: media_player.volume_up
+                target:
+                  entity_id: media_player.living_room_tv
+          - conditions: "{{ trigger.id == 'minus' or (trigger.id == 'knob' and turn == 'ccw') }}"
+            sequence:
+              - action: media_player.volume_down
+                target:
+                  entity_id: media_player.living_room_tv
+          - conditions: "{{ trigger.id == 'select' }}"
+            sequence:
+              - action: media_player.volume_mute
+                target:
+                  entity_id: media_player.living_room_tv
+                data:
+                  is_volume_muted: "{{ not state_attr('media_player.living_room_tv', 'is_volume_muted') }}"
+
+  - alias: "Office clock: stop the knob switching apps while the TV is on"
+    id: office_clock_block_navigation
+    triggers:
+      - trigger: state
+        entity_id: media_player.living_room_tv
+    actions:
+      - action: mqtt.publish
+        data:
+          topic: officeclock/cmd/settings
+          payload: '{{ {"blockNavigation": is_state("media_player.living_room_tv", "on")} | to_json }}'
+
+  - alias: "Office clock: push apps"
+    id: office_clock_push_apps
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/1"
+      - trigger: state
+        entity_id: sensor.now_playing
+      - trigger: state
+        entity_id: sensor.q_beverley_rd_to_manhattan
+      - trigger: state
+        entity_id: sensor.f_church_av_to_manhattan
+      - trigger: state
+        entity_id: media_player.living_room_tv
+        attribute: media_title
+    actions:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: daily
+        response_variable: fc
+      - variables:
+          today: "{{ ((fc['weather.forecast_home'] | default({}, true)).forecast | default([], true))[0] | default({}, true) }}"
+          temp: "{{ state_attr('weather.forecast_home', 'temperature') | round(0) | int }}"
+          words: >-
+            {% set c = states('weather.forecast_home') %}
+            {% set m = {'sunny': 'Sunny', 'clear-night': 'Clear', 'partlycloudy': 'Partly cloudy', 'cloudy': 'Cloudy',
+                        'fog': 'Fog', 'rainy': 'Rain', 'pouring': 'Heavy rain', 'lightning': 'Storms', 'lightning-rainy': 'Storms',
+                        'snowy': 'Snow', 'snowy-rainy': 'Sleet', 'hail': 'Hail', 'windy': 'Windy', 'windy-variant': 'Windy'} %}
+            {{ m.get(c, c | replace('-', ' ') | title) }}
+          rain_today: >-
+            {{ today.condition | default('') in ['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy', 'hail']
+               or (today.precipitation | default(0) | float(0)) > 0.05 }}
+          weather_text: >-
+            {{ temp }}° {{ words }}{{ ', rain today' if rain_today and words not in ['Rain', 'Heavy rain', 'Storms'] else '' }}
+          q_next: >-
+            {% set t = state_attr('sensor.q_beverley_rd_to_manhattan', 'times') | default([], true) %}
+            {% set t = (t if t is iterable and t is not string else []) | select('string') | map('as_datetime') | select('datetime') | select('gt', now()) | list %}
+            {{ 'N/A' if t | count == 0 else (((t[0] - now()).total_seconds() / 60) | round(0) | int ~ 'm') }}
+          f_next: >-
+            {% set t = state_attr('sensor.f_church_av_to_manhattan', 'times') | default([], true) %}
+            {% set t = (t if t is iterable and t is not string else []) | select('string') | map('as_datetime') | select('datetime') | select('gt', now()) | list %}
+            {{ 'N/A' if t | count == 0 else (((t[0] - now()).total_seconds() / 60) | round(0) | int ~ 'm') }}
+          tv_playing: >-
+            {% set plex = states.media_player | selectattr('entity_id', 'search', 'plex') | selectattr('state', 'eq', 'playing') | list %}
+            {% set tv = 'media_player.living_room_tv' %}
+            {% if plex | count > 0 and plex[0].attributes.media_title %}
+              {% set p = plex[0].attributes %}{{ 'TV: ' ~ (p.media_series_title ~ ' - ' if p.media_series_title else '') ~ p.media_title }}
+            {% elif (is_state(tv, 'on') or is_state(tv, 'playing')) and state_attr(tv, 'media_title') %}
+              {{ 'TV: ' ~ state_attr(tv, 'media_title') }}
+            {% endif %}
+          playing: "{{ states('sensor.now_playing') }}"
+      - action: mqtt.publish
+        data:
+          topic: officeclock/cmd/apps/pushed/weather
+          payload: '{{ {"text": weather_text, "durationMs": 7000, "lifetimeMs": 300000} | to_json }}'
+      - action: mqtt.publish
+        data:
+          topic: officeclock/cmd/apps/pushed/trainq
+          payload: '{{ {"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "scroll": {"mode": "static"}, "durationMs": 5000, "lifetimeMs": 300000} | to_json }}'
+      - action: mqtt.publish
+        data:
+          topic: officeclock/cmd/apps/pushed/trainf
+          payload: '{{ {"text": "F: " ~ f_next, "textColor": "#FF6319", "scroll": {"mode": "static"}, "durationMs": 5000, "lifetimeMs": 300000} | to_json }}'
+      - variables:
+          show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else (tv_playing | trim) }}"
+      - if: "{{ show | trim != '' }}"
+        then:
+          - action: mqtt.publish
+            data:
+              topic: officeclock/cmd/apps/pushed/nowplaying
+              payload: '{{ {"text": show | trim, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
+        else:
+          - action: mqtt.publish
+            data:
+              topic: officeclock/cmd/apps/pushed/nowplaying
+              payload: ""

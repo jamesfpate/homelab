@@ -93,6 +93,8 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.29 - fusion (Part Bench parametric CAD, internal only) - fusion.domain.com  
 192.168.1.40 / 192.168.40.40 - Home Assistant - ha.domain.com  
 192.168.1.31 / 192.168.40.31 - Mosquitto MQTT (HA <-> AWTRIX clock; MQTT_USER/MQTT_PASS in .env)  
+192.168.1.32 - mta-trains (Q at Beverley Rd -> MQTT)  
+192.168.1.33 - mta-trains-f (F at Church Av -> MQTT)  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
@@ -193,3 +195,7 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - HACS is installed (community integrations, e.g. KEF Connector for the LSX II).
 - MQTT: Mosquitto in the `home` stack (192.168.1.31 for HA, 192.168.40.31 for IoT devices). HA's MQTT integration points at
   192.168.1.31 with `MQTT_USER`/`MQTT_PASS`; AWTRIX points at 192.168.40.31 with HA discovery on. Config file in `appdata/mosquitto/`.
+- Office clock (Ulanzi TC002, AWTRIX NG, prefix `officeclock`): `packages/office_clock.yaml` pushes weather, Q and F train
+  screens and now-playing every minute (`<prefix>/cmd/apps/pushed/<app>`), maps knob/buttons to the LG TV while it is on, and the
+  loop order/disabled apps were set once via `PUT /api/v1/apps/order`. Train times come from `apps/mta` containers
+  (`mta-trains`, `mta-trains-f`: MTA GTFS-RT -> MQTT `transit/...`, no API key). After changing apps/mta bump `x-app-version`.

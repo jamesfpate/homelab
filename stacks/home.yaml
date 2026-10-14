@@ -5,6 +5,9 @@ networks:
   vlan-iot:
     external: true
 
+# mta-trains is built from apps/mta. Komodo's "Deploy on push" only redeploys a stack whose compose file changed, so after
+# changing apps/mta bump x-app-version in the same commit.
+x-app-version: 0025991
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
@@ -59,3 +62,43 @@ services:
         mosquitto_passwd -c -b /mosquitto/config/passwd "$$MQTT_USER" "$$MQTT_PASS"
         chown mosquitto:mosquitto /mosquitto/config/passwd && chmod 600 /mosquitto/config/passwd
         exec mosquitto -c /mosquitto/config/mosquitto.conf
+
+  mta-trains: # next Manhattan-bound Q trains at Beverley Rd -> MQTT (transit/beverley_q_manhattan), for the office clock
+    build: ../apps/mta
+    image: mta-trains:local
+    pull_policy: build
+    container_name: mta-trains
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.32
+    environment:
+      - TZ=${TZ}
+      - FEED=nqrw
+      - ROUTE=Q
+      - STOP_ID=D27N # Beverley Rd, northbound (Manhattan-bound); Brighton line stop ids D24-D29 = Prospect Park..Newkirk
+      - TOPIC=transit/beverley_q_manhattan
+      - POLL_S=30
+      - MQTT_HOST=192.168.1.31
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
+
+  mta-trains-f: # next F trains at Church Av (Manhattan-bound) -> MQTT (transit/church_f_north)
+    build: ../apps/mta
+    image: mta-trains:local
+    pull_policy: build
+    container_name: mta-trains-f
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.33
+    environment:
+      - TZ=${TZ}
+      - FEED=bdfm
+      - ROUTE=F
+      - STOP_ID=F27N # Church Av (F/G), northbound
+      - TOPIC=transit/church_f_north
+      - POLL_S=30
+      - MQTT_HOST=192.168.1.31
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
