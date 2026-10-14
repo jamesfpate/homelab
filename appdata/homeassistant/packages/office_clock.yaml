@@ -167,15 +167,15 @@ automation:
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/weather
-          payload: '{{ ({"text": weather_text, "icon": wx_icon, "iconMode": "push", "scroll": {"repeat": 1}, "durationMs": 7000, "lifetimeMs": 300000} | to_json) if show_wx else "" }}'
+          payload: '{{ ({"text": weather_text, "icon": wx_icon, "iconMode": "push", "repeat": 1, "durationMs": 7000, "lifetimeMs": 300000} | to_json) if show_wx else "" }}'
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainq
-          payload: '{{ ({"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "scroll": {"repeat": 1}, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_q else "" }}'
+          payload: '{{ ({"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "repeat": 1, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_q else "" }}'
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainf
-          payload: '{{ ({"text": "F: " ~ f_next, "textColor": "#FF6319", "scroll": {"repeat": 1}, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_f else "" }}'
+          payload: '{{ ({"text": "F: " ~ f_next, "textColor": "#FF6319", "repeat": 1, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_f else "" }}'
       - variables:
           show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else (tv_playing | trim) }}"
       - if: "{{ show | trim != '' }}"
@@ -183,7 +183,7 @@ automation:
           - action: mqtt.publish
             data:
               topic: officeclock/cmd/apps/pushed/nowplaying
-              payload: '{{ {"text": show | trim, "scroll": {"repeat": 1}, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
+              payload: '{{ {"text": show | trim, "repeat": 1, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
         else:
           - action: mqtt.publish
             data:
