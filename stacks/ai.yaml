@@ -126,3 +126,24 @@ services:
       - CUDA_CACHE_MAXSIZE=4294967296
     volumes:
       - /mnt/user/appdata/ollama:/root/.ollama
+
+  # Wake-word trainer (web UI): trains microWakeWord models (.tflite + ESPHome manifest) for the Satellite1 from
+  # TTS-generated samples of the phrase, plus optional real recordings uploaded in the UI. Blackwell image because
+  # the RTX PRO 4000 is sm_120. One-off tool; stop it when not training (it grabs VRAM alongside Ollama).
+  wakeword-trainer:
+    image: ghcr.io/tatertotterson/microwakeword:v17-blackwell
+    container_name: wakeword-trainer
+    restart: unless-stopped
+    runtime: nvidia
+    shm_size: 8g
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.54
+    environment:
+      - TZ=${TZ}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - REC_PORT=8789
+    volumes:
+      - /mnt/user/appdata/wakeword-trainer:/data
+
