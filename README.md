@@ -199,3 +199,8 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
   screens and now-playing every minute (`<prefix>/cmd/apps/pushed/<app>`), maps knob/buttons to the LG TV while it is on, and the
   loop order/disabled apps were set once via `PUT /api/v1/apps/order`. Train times come from `apps/mta` containers
   (`mta-trains`, `mta-trains-f`: MTA GTFS-RT -> MQTT `transit/...`, no API key). After changing apps/mta bump `x-app-version`.
+  Weather icons live in `appdata/homeassistant/office_clock_icons/` (uploaded with `POST http://192.168.40.60/api/v1/files?dir=/ICONS`).
+  Firmware is the community TC002 port (sanderdw/awtrix-ng-tc002); the official Blueforcer TC002 build exists since v1.2.2
+  (USB installer). After a reflash redo: Wi-Fi, MQTT 192.168.40.31 + creds + prefix `officeclock` + HA discovery,
+  `cmd/settings` time24h=false, the icon upload, and `PUT /api/v1/apps/order` (weather, Time, trainq, trainf, nowplaying;
+  Date/Battery disabled).

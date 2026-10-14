@@ -135,6 +135,12 @@ automation:
                         'rainy': '#1E90FF', 'pouring': '#0057D9', 'lightning': '#C77DFF', 'lightning-rainy': '#C77DFF',
                         'snowy': '#FFFFFF', 'snowy-rainy': '#D8EEFF', 'hail': '#D8EEFF', 'windy': '#7FDBFF', 'windy-variant': '#7FDBFF'} %}
             {{ m.get(c, '#FFFFFF') }}
+          wx_icon: >-
+            {% set c = states('weather.forecast_home') %}
+            {% set m = {'sunny': 'wx_sun', 'clear-night': 'wx_clearnight', 'partlycloudy': 'wx_partly', 'cloudy': 'wx_cloud', 'fog': 'wx_fog',
+                        'rainy': 'wx_rain', 'pouring': 'wx_pouring', 'lightning': 'wx_storm', 'lightning-rainy': 'wx_storm',
+                        'snowy': 'wx_snow', 'snowy-rainy': 'wx_snow', 'hail': 'wx_snow', 'windy': 'wx_cloud', 'windy-variant': 'wx_cloud'} %}
+            {{ m.get(c, 'wx_cloud') }}
           weather_text:
             - text: "{{ temp }}° "
               color: "{{ temp_color }}"
@@ -152,7 +158,7 @@ automation:
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/weather
-          payload: '{{ {"text": weather_text, "durationMs": 7000, "lifetimeMs": 300000} | to_json }}'
+          payload: '{{ {"text": weather_text, "icon": wx_icon, "durationMs": 7000, "lifetimeMs": 300000} | to_json }}'
       - action: mqtt.publish
         data:
           topic: officeclock/cmd/apps/pushed/trainq
