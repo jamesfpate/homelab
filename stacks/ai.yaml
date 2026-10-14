@@ -138,7 +138,7 @@ services:
     shm_size: 8g
     networks:
       vlan-private:
-        ipv4_address: 192.168.1.54
+        ipv4_address: 192.168.1.55
     environment:
       - TZ=${TZ}
       - NVIDIA_VISIBLE_DEVICES=all
