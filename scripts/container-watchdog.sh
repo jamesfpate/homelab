@@ -14,3 +14,12 @@ if [ "$(docker inspect -f '{{.State.Health.Status}}' traefik 2>/dev/null)" = "un
   echo "$(date '+%F %T') traefik unhealthy, restarting"
   docker restart traefik
 fi
+
+# Traefik reaches komodo-core over the "komodo" network. If that network is recreated (Komodo's own compose
+# restarting) while Traefik keeps running, Traefik silently drops off it and komodo.jamespate.net returns 504
+# (seen 2026-10-13). Reattach it.
+if docker network inspect komodo >/dev/null 2>&1 && \
+   ! docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' traefik 2>/dev/null | grep -qw komodo; then
+  echo "$(date '+%F %T') traefik not on komodo network, reattaching"
+  docker network connect komodo traefik
+fi
