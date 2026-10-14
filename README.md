@@ -95,7 +95,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.31 / 192.168.40.31 - Mosquitto MQTT (HA <-> AWTRIX clock; MQTT_USER/MQTT_PASS in .env)  
 192.168.1.32 - mta-trains (Q at Beverley Rd -> MQTT)  
 192.168.1.33 - mta-trains-f (F at Church Av -> MQTT)  
-192.168.1.55 - wakeword-trainer (microWakeWord trainer UI, port 8789; stop when idle)  
+192.168.1.55 - wakeword-trainer - wakeword.domain.com (microWakeWord trainer UI; stop when idle)  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  

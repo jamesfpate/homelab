@@ -146,4 +146,11 @@ services:
       - REC_PORT=8789
     volumes:
       - /mnt/user/appdata/wakeword-trainer:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=br0"
+      - "traefik.http.routers.wakeword.rule=Host(`wakeword.${DOMAIN}`)"
+      - "traefik.http.routers.wakeword.entrypoints=websecure"
+      - "traefik.http.routers.wakeword.middlewares=ipallowlist"
+      - "traefik.http.services.wakeword.loadbalancer.server.port=8789"
 
