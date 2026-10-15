@@ -1,0 +1,43 @@
+# Satellite1 firmware release watcher. The satellite runs our own build (appdata/esphome/satellite1-4f31a0.yaml, pinned
+# to a FutureProofHomes release, plus the "hey clanker" wake word), so FutureProofHomes' OTA update notice is gone.
+# This checks their GitHub releases every 6 h and notifies the phone when a new one is out; then bump ref in that
+# config and run scripts/flash-satellite1.sh.
+sensor:
+  - platform: rest
+    name: "Satellite1 firmware latest release"
+    unique_id: satellite1_firmware_latest_release
+    resource: https://api.github.com/repos/futureproofhomes/satellite1-esphome/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+      User-Agent: home-assistant
+    value_template: "{{ value_json.tag_name }}"
+    json_attributes:
+      - html_url
+      - published_at
+    scan_interval: 21600
+    icon: mdi:package-up
+
+automation:
+  - alias: "Satellite1: new firmware release"
+    id: satellite1_new_firmware_release
+    triggers:
+      - trigger: state
+        entity_id: sensor.satellite1_firmware_latest_release
+        not_from: [unknown, unavailable]
+        not_to: [unknown, unavailable]
+    actions:
+      - variables:
+          msg: >-
+            FutureProofHomes released {{ trigger.to_state.state }} (was {{ trigger.from_state.state }}). The Satellite1
+            runs a custom build with "hey clanker": bump ref in appdata/esphome/satellite1-4f31a0.yaml and reflash.
+      - action: notify.mobile_app_pixel_9_pro_xl
+        data:
+          title: "Satellite1 firmware {{ trigger.to_state.state }}"
+          message: "{{ msg }}"
+          data:
+            clickAction: "{{ state_attr('sensor.satellite1_firmware_latest_release', 'html_url') }}"
+      - action: persistent_notification.create
+        data:
+          notification_id: satellite1_firmware
+          title: "Satellite1 firmware {{ trigger.to_state.state }}"
+          message: "{{ msg }}"

@@ -92,6 +92,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.2 - Traefik - traefik.domain.com  
 192.168.1.4 - Dyndns - dyndns.domain.com  
 192.168.1.7 - Gatus uptime checks - status.domain.com  
+192.168.1.8 - ESPHome build container (only while scripts/flash-satellite1.sh runs)  
 192.168.1.10 / 192.168.60.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.13 - postgres  
@@ -105,6 +106,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.32 - mta-trains (Q at Beverley Rd -> MQTT)  
 192.168.1.33 - mta-trains-f (F at Church Av -> MQTT)  
 192.168.1.55 - wakeword-trainer - wakeword.domain.com (microWakeWord trainer UI; stop when idle)  
+192.168.1.109 - Satellite1 voice satellite (custom firmware, see below)  
 192.168.40.45 - Music Assistant (IoT VLAN, with its speakers) - music.domain.com  
 192.168.1.50 - Whisper speech-to-text (Wyoming :10300, GPU)  
 192.168.1.51 - Chatterbox Turbo text-to-speech (Wyoming :10300, GPU)  
@@ -205,6 +207,12 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - HACS is installed (community integrations, e.g. KEF Connector for the LSX II).
 - MQTT: Mosquitto in the `home` stack (192.168.1.31 for HA, 192.168.40.31 for IoT devices). HA's MQTT integration points at
   192.168.1.31 with `MQTT_USER`/`MQTT_PASS`; AWTRIX points at 192.168.40.31 with HA discovery on. Config file in `appdata/mosquitto/`.
+- Satellite1 (192.168.1.109) runs our own build, `appdata/esphome/satellite1-4f31a0.yaml`: FutureProofHomes' dashboard
+  config pinned to a release tag, plus the custom "hey clanker" wake word (`appdata/esphome/wakewords/`, trained with the
+  wakeword-trainer; keep only the standard manifest fields, ESPHome rejects the trainer's extras). Build and flash with
+  `scripts/flash-satellite1.sh` on the host after copying `appdata/esphome/` to `/mnt/user/appdata/esphome/`. Don't use
+  FutureProofHomes' own OTA (it drops hey clanker); `packages/satellite1_firmware.yaml` notifies the phone on a new
+  release, then bump `ref` and set ESPHOME_VERSION in the script to their `requirements.txt` version at that tag.
 - Clock (Ulanzi TC002, official AWTRIX NG 1.2.2, prefix `clock`, http://officeclock.home / 192.168.40.60): `packages/clock.yaml`
   pushes one always-on layout app, `main`, every minute: time, weather icon and temperature fixed on top; Q (7:45-9:00), F
   (8:15-9:00), rain later today and now playing scroll along the bottom (date when idle). Built-in Time is the fallback

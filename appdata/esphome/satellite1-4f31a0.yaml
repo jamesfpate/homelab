@@ -1,0 +1,39 @@
+# Satellite1 (FutureProofHomes, 192.168.1.109) built from their dashboard template, plus the "hey clanker" wake word
+# trained with the wakeword-trainer (stacks/ai.yaml). Built and flashed by scripts/flash-satellite1.sh.
+# Pinned to a FutureProofHomes release: to update, bump ref below to the new tag (HA notifies when one is out,
+# packages/satellite1_firmware.yaml) and reflash. Don't use FutureProofHomes' own OTA: it would drop hey clanker.
+# The API encryption key is the one HA provisioned, kept on the device (encryption: with no key in common/home_assistant.yaml).
+substitutions:
+  name: satellite1
+  friendly_name: Satellite1
+  xmos_fw_version: "v1.0.3"
+  log_level: info
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: true
+  friendly_name: ${friendly_name}
+
+packages:
+  FutureProofHomes.Satellite1:
+    url: &repo_url "https://github.com/futureproofhomes/satellite1-esphome"
+    ref: &repo_ref "v0.2.1"
+    refresh: 1d
+    files:
+      - config/satellite1.base.yaml
+      - config/common/dashboard_build.yaml
+      - path: config/common/components.external.yaml
+        vars:
+          ext_comp_repo_url: *repo_url
+          ext_comp_repo_ref: *repo_ref
+
+logger:
+  level: ${log_level}
+
+# Added next to hey_jarvis and okay_nabu; picked in HA's wake word select. Uses the cutoff from its own calibration
+# (0.95: 98% recall, 0 false accepts over 9.7 h); the sensitivity select only adjusts the two stock models.
+micro_wake_word:
+  id: mww
+  models:
+    - id: hey_clanker
+      model: wakewords/hey_clanker.json
