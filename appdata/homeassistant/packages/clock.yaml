@@ -49,7 +49,8 @@ template:
           {% else %}nothing{% endif %}
 
 automation:
-  - alias: "Clock: knob and buttons control the TV while it is on"
+  # Plus/minus always drive the receiver; the knob and select drive the TV while it is on.
+  - alias: "Clock: buttons control the receiver, knob controls the TV"
     id: clock_tv_controls
     mode: queued
     triggers:
@@ -68,25 +69,33 @@ automation:
         entity_id: binary_sensor.clock_button_select
         to: "on"
         id: select
-    conditions:
-      - condition: state
-        entity_id: media_player.living_room_tv
-        state: "on"
     actions:
       - variables:
           turn: "{{ state_attr('event.clock_knob', 'event_type') }}"
+          tv_on: "{{ is_state('media_player.living_room_tv', 'on') }}"
+          receiver_on: "{{ states('media_player.tx_nr7100') not in ['off', 'unavailable', 'unknown'] }}"
       - choose:
-          - conditions: "{{ trigger.id == 'plus' or (trigger.id == 'knob' and turn == 'clockwise') }}"
+          - conditions: "{{ trigger.id == 'plus' and receiver_on }}"
+            sequence:
+              - action: media_player.volume_up
+                target:
+                  entity_id: media_player.tx_nr7100
+          - conditions: "{{ trigger.id == 'minus' and receiver_on }}"
+            sequence:
+              - action: media_player.volume_down
+                target:
+                  entity_id: media_player.tx_nr7100
+          - conditions: "{{ trigger.id == 'knob' and turn == 'clockwise' and tv_on }}"
             sequence:
               - action: media_player.volume_up
                 target:
                   entity_id: media_player.living_room_tv
-          - conditions: "{{ trigger.id == 'minus' or (trigger.id == 'knob' and turn == 'counterclockwise') }}"
+          - conditions: "{{ trigger.id == 'knob' and turn == 'counterclockwise' and tv_on }}"
             sequence:
               - action: media_player.volume_down
                 target:
                   entity_id: media_player.living_room_tv
-          - conditions: "{{ trigger.id == 'select' }}"
+          - conditions: "{{ trigger.id == 'select' and tv_on }}"
             sequence:
               - action: media_player.volume_mute
                 target:
@@ -94,17 +103,20 @@ automation:
                 data:
                   is_volume_muted: "{{ not state_attr('media_player.living_room_tv', 'is_volume_muted') }}"
 
-  - alias: "Clock: stop the knob switching apps while the TV is on"
+  # The buttons and knob never switch apps ("main" is the only screen); HA handles them instead.
+  - alias: "Clock: block button navigation"
     id: clock_block_navigation
-    mode: restart
     triggers:
+      - trigger: homeassistant
+        event: start
       - trigger: state
-        entity_id: media_player.living_room_tv
+        entity_id: binary_sensor.clock_button_select
+        from: unavailable
     actions:
       - action: mqtt.publish
         data:
           topic: clock/cmd/settings
-          payload: '{{ {"blockNavigation": is_state("media_player.living_room_tv", "on")} | to_json }}'
+          payload: '{"blockNavigation": true}'
 
   - alias: "Clock: push apps"
     id: clock_push_apps
