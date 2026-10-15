@@ -126,6 +126,7 @@ services:
   gatus:
     build: ../apps/gatus
     image: gatus:local
+    pull_policy: build
     container_name: gatus
     restart: unless-stopped
     cap_add:
