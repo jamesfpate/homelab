@@ -24,7 +24,7 @@ if docker network inspect komodo >/dev/null 2>&1 && \
   docker network connect komodo traefik
 fi
 
-# Dead-man's switch: ping Healthchecks.io every run. When iris, Docker or the internet is down the pings stop and
+# Dead-man's switch: ping Healthchecks.io every run. When the server, Docker or the internet is down the pings stop and
 # Healthchecks alerts from outside (Gatus and Komodo can't, they run here). Off until HC_PING_URL is set in the .env.
 HC_PING_URL=$(grep -oP '^HC_PING_URL=\K.*' /mnt/user/appdata/env/.env 2>/dev/null | tr -d ' \r"')
 if [ -n "$HC_PING_URL" ]; then

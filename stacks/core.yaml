@@ -7,7 +7,7 @@ networks:
 
 # gatus is built from apps/gatus. Komodo's "Deploy on push" only redeploys a stack whose compose file changed, so after
 # changing apps/gatus bump x-app-version in the same commit.
-x-app-version: 1
+x-app-version: 2
 
 services:
   pgadmin:
@@ -105,22 +105,6 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     labels:
       - "traefik.enable=false"
-
-  unraid-proxy:
-    image: alpine:latest
-    container_name: unraid-proxy
-    restart: unless-stopped
-    networks:
-      vlan-private:
-        ipv4_address: 192.168.1.6
-    command: sleep infinity
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.unraid.rule=Host(`unraid.${DOMAIN}`)"
-      - "traefik.http.routers.unraid.entrypoints=websecure"
-      # url only: newer Traefik rejects port/scheme next to url and drops the route (unraid.<domain> 404, 2026-10-14)
-      - "traefik.http.services.unraid.loadbalancer.server.url=http://192.168.1.42"
-      - "traefik.http.services.unraid.loadbalancer.passHostHeader=true"
 
   # Uptime checks (apps/gatus/config.yaml) with Pushover alerts. Web UI at status.<domain>.
   gatus:

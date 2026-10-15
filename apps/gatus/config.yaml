@@ -25,6 +25,7 @@ x-web: &web
   client:
     timeout: 10s
   conditions:
+    - "[CONNECTED] == true" # no answer has no status, which would pass the two below
     - "[STATUS] < 500"
     - "[STATUS] != 404"
   alerts:
@@ -59,7 +60,6 @@ endpoints:
 
   - { name: komodo, url: "https://komodo.${DOMAIN}", <<: *web }
   - { name: traefik, url: "https://traefik.${DOMAIN}", <<: *web }
-  - { name: unraid, url: "http://192.168.1.42/Main", <<: *web } # direct: iris.local is mDNS and does not resolve in containers
   - { name: home assistant, url: "https://ha.${DOMAIN}", <<: *web }
   - { name: plex, url: "https://plex.${DOMAIN}", <<: *web }
   - { name: seerr, url: "https://request.${DOMAIN}", <<: *web }
@@ -80,7 +80,8 @@ endpoints:
   - { name: ash, url: "https://ash.${DOMAIN}", <<: *web }
   - { name: typing, url: "https://type.${DOMAIN}", <<: *web }
   - { name: fusion, url: "https://fusion.${DOMAIN}", <<: *web }
-  # wakeword-trainer is left out: it is stopped when idle.
+  # wakeword-trainer is left out: it is stopped when idle. Unraid itself (192.168.1.42) is left out: macvlan containers
+  # cannot reach their own host.
 
   - { name: mqtt, group: home, url: "tcp://192.168.1.31:1883", <<: *tcp }
   - { name: postgres, group: infra, url: "tcp://192.168.1.13:5432", <<: *tcp }

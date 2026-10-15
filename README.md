@@ -68,7 +68,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
   failures. A 404 counts as down (Traefik's answer for a missing/dropped route). UI at status.domain.com.
 - Komodo alerter (Pushover, set up in the UI): failed procedures/deploys, server unreachable, CPU/memory/disk.
 - Healthchecks.io dead-man's switch: `container-watchdog.sh` pings `HC_PING_URL` (from the .env) every 5 minutes; Healthchecks
-  alerts when the pings stop (iris, Docker or the internet down), which nothing on iris can report.
+  alerts when the pings stop (the server, Docker or the internet down), which nothing on the server can report.
 - Unraid notifications (Settings -> Notifications, Pushover agent): array, disk SMART, parity.
 
 ## UniFi network notes
@@ -86,12 +86,11 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 ## Hosts & devices
 192.168.1.1 - UniFi Dream Machine SE (gateway, UniFi Protect cameras, WireGuard VPN server for remote access)  
 192.168.1.41 - KVM (remote console for the Unraid server)  
-192.168.1.42 - Unraid server (iris) - unraid.domain.com  
+192.168.1.42 - Unraid server (homelab, homelab.local / homelab.home)  
 
 ## Services
 192.168.1.2 - Traefik - traefik.domain.com  
 192.168.1.4 - Dyndns - dyndns.domain.com  
-192.168.1.6 - unraid proxy (routes unraid.domain.com to 192.168.1.42)  
 192.168.1.7 - Gatus uptime checks - status.domain.com  
 192.168.1.10 / 192.168.60.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
