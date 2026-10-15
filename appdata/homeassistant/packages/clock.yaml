@@ -1,7 +1,8 @@
-# Office clock (Ulanzi TC002, AWTRIX NG, MQTT prefix "officeclock"). HA pushes apps every minute: weather (coloured, still icon, 7:30-9:00 only
-# temperature + condition), next catchable Q (7:45-9:00) and F (8:15-9:00) trains (sensors fed by the mta-trains containers; trains under the
-# 10 min walk are skipped), and what the living room receiver or TV is playing. Time is the clock's built-in app. Order/disable
-# of apps is set once on the clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
+# Clock (Ulanzi TC002, official AWTRIX NG 1.2+, MQTT prefix "clock"). HA pushes apps every minute: "morning", one
+# non-scrolling two-row screen (top: weather icon, coloured temperature and condition, 7:30-9:00; bottom: next two
+# catchable Q (7:45-9:00) and F (8:15-9:00) trains, fed by the mta-trains containers, skipping trains under the 10 min
+# walk), and what the living room receiver or TV is playing. Time is the clock's built-in app. Order/disable of apps is
+# set once on the clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
 mqtt:
   sensor:
     - name: "Q Beverley Rd to Manhattan"
@@ -36,23 +37,23 @@ template:
           {{ ns.t[:120] if ns.t else 'nothing' }}
 
 automation:
-  - alias: "Office clock: knob and buttons control the TV while it is on"
-    id: office_clock_tv_controls
+  - alias: "Clock: knob and buttons control the TV while it is on"
+    id: clock_tv_controls
     mode: queued
     triggers:
       - trigger: state
-        entity_id: event.office_clock_knob
+        entity_id: event.clock_knob
         id: knob
       - trigger: state
-        entity_id: binary_sensor.office_clock_button_right
+        entity_id: binary_sensor.clock_button_right
         to: "on"
         id: plus
       - trigger: state
-        entity_id: binary_sensor.office_clock_button_left
+        entity_id: binary_sensor.clock_button_left
         to: "on"
         id: minus
       - trigger: state
-        entity_id: binary_sensor.office_clock_button_select
+        entity_id: binary_sensor.clock_button_select
         to: "on"
         id: select
     conditions:
@@ -61,14 +62,14 @@ automation:
         state: "on"
     actions:
       - variables:
-          turn: "{{ state_attr('event.office_clock_knob', 'event_type') }}"
+          turn: "{{ state_attr('event.clock_knob', 'event_type') }}"
       - choose:
-          - conditions: "{{ trigger.id == 'plus' or (trigger.id == 'knob' and turn == 'cw') }}"
+          - conditions: "{{ trigger.id == 'plus' or (trigger.id == 'knob' and turn == 'clockwise') }}"
             sequence:
               - action: media_player.volume_up
                 target:
                   entity_id: media_player.living_room_tv
-          - conditions: "{{ trigger.id == 'minus' or (trigger.id == 'knob' and turn == 'ccw') }}"
+          - conditions: "{{ trigger.id == 'minus' or (trigger.id == 'knob' and turn == 'counterclockwise') }}"
             sequence:
               - action: media_player.volume_down
                 target:
@@ -81,8 +82,8 @@ automation:
                 data:
                   is_volume_muted: "{{ not state_attr('media_player.living_room_tv', 'is_volume_muted') }}"
 
-  - alias: "Office clock: stop the knob switching apps while the TV is on"
-    id: office_clock_block_navigation
+  - alias: "Clock: stop the knob switching apps while the TV is on"
+    id: clock_block_navigation
     mode: restart
     triggers:
       - trigger: state
@@ -90,11 +91,11 @@ automation:
     actions:
       - action: mqtt.publish
         data:
-          topic: officeclock/cmd/settings
+          topic: clock/cmd/settings
           payload: '{{ {"blockNavigation": is_state("media_player.living_room_tv", "on")} | to_json }}'
 
-  - alias: "Office clock: push apps"
-    id: office_clock_push_apps
+  - alias: "Clock: push apps"
+    id: clock_push_apps
     mode: single
     triggers:
       - trigger: time_pattern
@@ -117,8 +118,8 @@ automation:
           temp: "{{ state_attr('weather.forecast_home', 'temperature') | round(0) | int }}"
           words: >-
             {% set c = states('weather.forecast_home') %}
-            {% set m = {'sunny': 'Sunny', 'clear-night': 'Clear', 'partlycloudy': 'Partly cloudy', 'cloudy': 'Cloudy',
-                        'fog': 'Fog', 'rainy': 'Rain', 'pouring': 'Heavy rain', 'lightning': 'Storms', 'lightning-rainy': 'Storms',
+            {% set m = {'sunny': 'Sunny', 'clear-night': 'Clear', 'partlycloudy': 'Partly', 'cloudy': 'Cloudy',
+                        'fog': 'Fog', 'rainy': 'Rain', 'pouring': 'Pouring', 'lightning': 'Storms', 'lightning-rainy': 'Storms',
                         'snowy': 'Snow', 'snowy-rainy': 'Sleet', 'hail': 'Hail', 'windy': 'Windy', 'windy-variant': 'Windy'} %}
             {{ m.get(c, c | replace('-', ' ') | title) }}
           rain_today: >-
@@ -141,16 +142,17 @@ automation:
           weather_text:
             - text: "{{ temp }}° "
               color: "{{ temp_color }}"
-            - text: "{{ words }}{{ ', rain today' if rain_today and words not in ['Rain', 'Heavy rain', 'Storms'] else '' }}"
-              color: "{{ words_color }}"
+            # rain later today replaces the condition (the icon still shows the current one)
+            - text: "{{ 'Rain' if rain_today and words not in ['Rain', 'Pouring', 'Storms'] else words }}"
+              color: "{{ '#1E90FF' if rain_today and words not in ['Rain', 'Pouring', 'Storms'] else words_color }}"
           q_next: >-
             {% set t = (state_attr('sensor.q_beverley_rd_to_manhattan', 'times') or []) | map('as_timestamp', none) | select('number') | list %}
             {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
-            {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join('m ') ~ 'm') }}
+            {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join(' ')) }}
           f_next: >-
             {% set t = (state_attr('sensor.f_church_av_to_manhattan', 'times') or []) | map('as_timestamp', none) | select('number') | list %}
             {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
-            {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join('m ') ~ 'm') }}
+            {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join(' ')) }}
           playing: "{{ states('sensor.now_playing') }}"
           # show windows (local time, every day): weather 7:30-9:00, Q 7:45-9:00, F 8:15-9:00
           hm: "{{ now().hour * 60 + now().minute }}"
@@ -164,28 +166,32 @@ automation:
             {% if plex | count > 0 and plex[0].attributes.media_title %}
               {% set p = plex[0].attributes %}{{ 'TV: ' ~ (p.media_series_title ~ ' - ' if p.media_series_title else '') ~ p.media_title }}
             {% endif %}
+      - variables:
+          # one layout app, regions only for what is in its window; the weather sits mid-height while no trains show
+          morning: >-
+            {% set trains = show_q or show_f %}{% set y = 0 if trains else 4 %}
+            {% set ns = namespace(r=[]) %}
+            {% if show_wx %}
+              {% set ns.r = ns.r + [{"id": "wxicon", "box": [0, y, 8, 8], "icon": wx_icon},
+                                    {"id": "wx", "box": [9, y, 43, 8], "font": "small", "align": "start", "text": weather_text}] %}
+            {% endif %}
+            {% if show_q %}{% set ns.r = ns.r + [{"id": "q", "box": [1, 8, 25, 8], "font": "small", "align": "start", "text": "Q " ~ q_next, "color": "#FCCC0A"}] %}{% endif %}
+            {% if show_f %}{% set ns.r = ns.r + [{"id": "f", "box": [27, 8, 25, 8], "font": "small", "align": "start", "text": "F " ~ f_next, "color": "#FF6319"}] %}{% endif %}
+            {{ {"layout": {"version": 1, "regions": ns.r}, "durationMs": 10000, "lifetimeMs": 300000} if ns.r else "" }}
       - action: mqtt.publish
         data:
-          topic: officeclock/cmd/apps/pushed/weather
-          payload: '{{ ({"text": weather_text, "icon": wx_icon, "iconMode": "push", "repeat": 1, "durationMs": 7000, "lifetimeMs": 300000} | to_json) if show_wx else "" }}'
-      - action: mqtt.publish
-        data:
-          topic: officeclock/cmd/apps/pushed/trainq
-          payload: '{{ ({"text": "Q: " ~ q_next, "textColor": "#FCCC0A", "repeat": 1, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_q else "" }}'
-      - action: mqtt.publish
-        data:
-          topic: officeclock/cmd/apps/pushed/trainf
-          payload: '{{ ({"text": "F: " ~ f_next, "textColor": "#FF6319", "repeat": 1, "durationMs": 6000, "lifetimeMs": 300000} | to_json) if show_f else "" }}'
+          topic: clock/cmd/apps/pushed/morning
+          payload: '{{ (morning | to_json) if morning else "" }}'
       - variables:
           show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else (tv_playing | trim) }}"
       - if: "{{ show | trim != '' }}"
         then:
           - action: mqtt.publish
             data:
-              topic: officeclock/cmd/apps/pushed/nowplaying
+              topic: clock/cmd/apps/pushed/nowplaying
               payload: '{{ {"text": show | trim, "repeat": 1, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
         else:
           - action: mqtt.publish
             data:
-              topic: officeclock/cmd/apps/pushed/nowplaying
+              topic: clock/cmd/apps/pushed/nowplaying
               payload: ""
