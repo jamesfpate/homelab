@@ -62,6 +62,15 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 - `scripts/container-watchdog.sh` runs every 5 minutes from User Scripts (`*/5 * * * *`): Docker's restart policy ignores a
   container that was recreated but never started, which is how a Traefik auto-update caused a 40 h outage.
 
+### Monitoring
+- Gatus (`apps/gatus/config.yaml`, built into the image by `stacks/core.yaml`; bump `x-app-version` there after editing) checks
+  every Traefik name, MQTT, postgres, the voice services and a few devices each minute and sends Pushover alerts after 3
+  failures. A 404 counts as down (Traefik's answer for a missing/dropped route). UI at status.domain.com.
+- Komodo alerter (Pushover, set up in the UI): failed procedures/deploys, server unreachable, CPU/memory/disk.
+- Healthchecks.io dead-man's switch: `container-watchdog.sh` pings `HC_PING_URL` (from the .env) every 5 minutes; Healthchecks
+  alerts when the pings stop (iris, Docker or the internet down), which nothing on iris can report.
+- Unraid notifications (Settings -> Notifications, Pushover agent): array, disk SMART, parity.
+
 ## UniFi network notes
 - VLANs 20/40/60/70 have "Isolate Network" on (auto "Isolated Networks" block policies, priority 30000).
 - Custom firewall policy "Main to IoT": allow 192.168.1.0/24 -> 192.168.40.0/24, auto-allow return traffic
@@ -83,6 +92,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.2 - Traefik - traefik.domain.com  
 192.168.1.4 - Dyndns - dyndns.domain.com  
 192.168.1.6 - unraid proxy (routes unraid.domain.com to 192.168.1.42)  
+192.168.1.7 - Gatus uptime checks - status.domain.com  
 192.168.1.10 / 192.168.60.10 - Plex - plex.domain.com  
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.13 - postgres  
@@ -196,12 +206,13 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - HACS is installed (community integrations, e.g. KEF Connector for the LSX II).
 - MQTT: Mosquitto in the `home` stack (192.168.1.31 for HA, 192.168.40.31 for IoT devices). HA's MQTT integration points at
   192.168.1.31 with `MQTT_USER`/`MQTT_PASS`; AWTRIX points at 192.168.40.31 with HA discovery on. Config file in `appdata/mosquitto/`.
-- Office clock (Ulanzi TC002, AWTRIX NG, prefix `officeclock`): `packages/office_clock.yaml` pushes weather, Q and F train
-  screens and now-playing every minute (`<prefix>/cmd/apps/pushed/<app>`), maps knob/buttons to the LG TV while it is on, and the
-  loop order/disabled apps were set once via `PUT /api/v1/apps/order`. Train times come from `apps/mta` containers
-  (`mta-trains`, `mta-trains-f`: MTA GTFS-RT -> MQTT `transit/...`, no API key). After changing apps/mta bump `x-app-version`.
-  Weather icons live in `appdata/homeassistant/office_clock_icons/` (uploaded with `POST http://192.168.40.60/api/v1/files?dir=/ICONS`).
-  Firmware is the community TC002 port (sanderdw/awtrix-ng-tc002); the official Blueforcer TC002 build exists since v1.2.2
-  (USB installer). After a reflash redo: Wi-Fi, MQTT 192.168.40.31 + creds + prefix `officeclock` + HA discovery,
-  `cmd/settings` time24h=false, the icon upload, and `PUT /api/v1/apps/order` (weather, Time, trainq, trainf, nowplaying;
-  Date/Battery disabled).
+- Clock (Ulanzi TC002, official AWTRIX NG 1.2.2, prefix `clock`, http://officeclock.home / 192.168.40.60): `packages/clock.yaml`
+  pushes `morning` (one non-scrolling two-row layout: weather 7:30-9:00 on top, next catchable Q 7:45-9:00 and F 8:15-9:00
+  below) and now-playing every minute (`clock/cmd/apps/pushed/<app>`), and maps knob/buttons to the LG TV while it is on.
+  Train times come from `apps/mta` containers (`mta-trains`, `mta-trains-f`: MTA GTFS-RT -> MQTT `transit/...`, no API key).
+  After changing apps/mta bump `x-app-version`. Weather icons live in `appdata/homeassistant/clock_icons/`.
+  After a reflash (USB installer from Blueforcer/awtrix-ng releases; needs the stock Ulanzi app on the clock) redo:
+  Wi-Fi, MQTT 192.168.40.31 + creds + prefix `clock` + HA discovery, `PUT /api/v1/system` `{"tz":"EST5EDT,M3.2.0,M11.1.0",
+  "tzName":"America/New_York"}`, `PATCH /api/v1/settings` `{"time24h":false,"timeShowAmPm":true,"timeLeadingZero":false,
+  "useCelsius":false}`, upload the icons (`POST /api/v1/files?dir=/ICONS`), and `clock/cmd/apps/order`
+  `{"order":["morning","Time","nowplaying"],"disabled":["Status"]}`. HA entities are `*.clock_*`.

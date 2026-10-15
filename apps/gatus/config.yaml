@@ -1,0 +1,94 @@
+# Gatus: uptime checks for the homelab, alerts to Pushover. Web UI at status.<domain> (LAN/VPN only).
+# Baked into the image (stacks/core.yaml builds apps/gatus), so after editing bump x-app-version in core.yaml.
+# HTTP checks go through Traefik (*.<domain> -> 192.168.1.2), so they catch routing/504s, not just dead containers.
+# A 401/302 from an app's own login still counts as up. 404 is down: it is what Traefik answers when a route is missing
+# (an unhealthy container drops out of routing, or Traefik rejects the labels), which is exactly the failure to catch.
+storage:
+  type: sqlite
+  path: /data/data.db
+
+web:
+  port: 8080
+
+alerting:
+  pushover:
+    application-token: "${PUSHOVER_TOKEN}"
+    user-key: "${PUSHOVER_USER}"
+    default-alert:
+      failure-threshold: 3   # 3 failed checks in a row (~3 min) before alerting
+      success-threshold: 2
+      send-on-resolved: true
+
+x-web: &web
+  group: web
+  interval: 60s
+  client:
+    timeout: 10s
+  conditions:
+    - "[STATUS] < 500"
+    - "[STATUS] != 404"
+  alerts:
+    - type: pushover
+
+x-tcp: &tcp
+  interval: 60s
+  conditions:
+    - "[CONNECTED] == true"
+  alerts:
+    - type: pushover
+
+x-ping: &ping
+  group: devices
+  interval: 120s
+  conditions:
+    - "[CONNECTED] == true"
+  alerts:
+    - type: pushover
+
+endpoints:
+  # Traefik certificate (one wildcard cert covers every name); Traefik renews 30 days out, so 14 days left means renewal is failing.
+  - name: certificate
+    group: infra
+    url: "https://traefik.${DOMAIN}"
+    interval: 6h
+    conditions:
+      - "[CERTIFICATE_EXPIRATION] > 336h"
+    alerts:
+      - type: pushover
+        failure-threshold: 1
+
+  - { name: komodo, url: "https://komodo.${DOMAIN}", <<: *web }
+  - { name: traefik, url: "https://traefik.${DOMAIN}", <<: *web }
+  - { name: unraid, url: "http://192.168.1.42/Main", <<: *web } # direct: iris.local is mDNS and does not resolve in containers
+  - { name: home assistant, url: "https://ha.${DOMAIN}", <<: *web }
+  - { name: plex, url: "https://plex.${DOMAIN}", <<: *web }
+  - { name: seerr, url: "https://request.${DOMAIN}", <<: *web }
+  - { name: sonarr, url: "https://tv.${DOMAIN}", <<: *web }
+  - { name: radarr, url: "https://movies.${DOMAIN}", <<: *web }
+  - { name: music assistant, url: "https://music.${DOMAIN}", <<: *web }
+  - { name: prowlarr, url: "https://indexer.${DOMAIN}", <<: *web }
+  - { name: bazarr, url: "https://subtitles.${DOMAIN}", <<: *web }
+  - { name: usenet, url: "https://usenet.${DOMAIN}", <<: *web }
+  - { name: soulseek, url: "https://soulseek.${DOMAIN}", <<: *web }
+  - { name: youtube, url: "https://youtube.${DOMAIN}", <<: *web }
+  - { name: lidarr, url: "https://albums.${DOMAIN}", <<: *web }
+  - { name: navidrome, url: "https://listen.${DOMAIN}", <<: *web }
+  - { name: musicflow inbox, url: "https://inbox.${DOMAIN}", <<: *web }
+  - { name: open webui, url: "https://chat.${DOMAIN}", <<: *web }
+  - { name: pgadmin, url: "https://db.${DOMAIN}", <<: *web }
+  - { name: dyndns, url: "https://dyndns.${DOMAIN}", <<: *web }
+  - { name: ash, url: "https://ash.${DOMAIN}", <<: *web }
+  - { name: typing, url: "https://type.${DOMAIN}", <<: *web }
+  - { name: fusion, url: "https://fusion.${DOMAIN}", <<: *web }
+  # wakeword-trainer is left out: it is stopped when idle.
+
+  - { name: mqtt, group: home, url: "tcp://192.168.1.31:1883", <<: *tcp }
+  - { name: postgres, group: infra, url: "tcp://192.168.1.13:5432", <<: *tcp }
+  - { name: whisper, group: voice, url: "tcp://192.168.1.50:10300", <<: *tcp }
+  - { name: chatterbox, group: voice, url: "tcp://192.168.1.51:10300", <<: *tcp }
+  - { name: ollama, group: voice, url: "tcp://192.168.1.52:11434", <<: *tcp }
+  - { name: kokoro, group: voice, url: "tcp://192.168.1.53:10300", <<: *tcp }
+
+  - { name: udm, url: "icmp://192.168.1.1", <<: *ping }
+  - { name: satellite1, url: "icmp://192.168.1.109", <<: *ping }
+  - { name: clock, url: "icmp://192.168.40.60", <<: *ping }

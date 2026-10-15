@@ -5,6 +5,10 @@ networks:
   vlan-downloads:
     external: true
 
+# gatus is built from apps/gatus. Komodo's "Deploy on push" only redeploys a stack whose compose file changed, so after
+# changing apps/gatus bump x-app-version in the same commit.
+x-app-version: 1
+
 services:
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -114,7 +118,31 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.unraid.rule=Host(`unraid.${DOMAIN}`)"
       - "traefik.http.routers.unraid.entrypoints=websecure"
-      - "traefik.http.services.unraid.loadbalancer.server.port=80"
+      # url only: newer Traefik rejects port/scheme next to url and drops the route (unraid.<domain> 404, 2026-10-14)
       - "traefik.http.services.unraid.loadbalancer.server.url=http://192.168.1.42"
       - "traefik.http.services.unraid.loadbalancer.passHostHeader=true"
-      - "traefik.http.services.unraid.loadbalancer.server.scheme=http"
+
+  # Uptime checks (apps/gatus/config.yaml) with Pushover alerts. Web UI at status.<domain>.
+  gatus:
+    build: ../apps/gatus
+    image: gatus:local
+    container_name: gatus
+    restart: unless-stopped
+    cap_add:
+      - NET_RAW # icmp checks
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.7
+    environment:
+      - TZ=${TZ}
+      - DOMAIN=${DOMAIN}
+      - PUSHOVER_TOKEN=${PUSHOVER_TOKEN}
+      - PUSHOVER_USER=${PUSHOVER_USER}
+    volumes:
+      - /mnt/user/appdata/gatus:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.status.rule=Host(`status.${DOMAIN}`)"
+      - "traefik.http.routers.status.entrypoints=websecure"
+      - "traefik.http.routers.status.middlewares=ipallowlist"
+      - "traefik.http.services.status.loadbalancer.server.port=8080"
