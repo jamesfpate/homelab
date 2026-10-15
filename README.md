@@ -206,12 +206,13 @@ Phase 2 services are in the compose files with `profiles: ["discovery"]`, so Kom
 - MQTT: Mosquitto in the `home` stack (192.168.1.31 for HA, 192.168.40.31 for IoT devices). HA's MQTT integration points at
   192.168.1.31 with `MQTT_USER`/`MQTT_PASS`; AWTRIX points at 192.168.40.31 with HA discovery on. Config file in `appdata/mosquitto/`.
 - Clock (Ulanzi TC002, official AWTRIX NG 1.2.2, prefix `clock`, http://officeclock.home / 192.168.40.60): `packages/clock.yaml`
-  pushes `morning` (one non-scrolling two-row layout: weather 7:30-9:00 on top, next catchable Q 7:45-9:00 and F 8:15-9:00
-  below) and now-playing every minute (`clock/cmd/apps/pushed/<app>`), and maps knob/buttons to the LG TV while it is on.
+  pushes one always-on layout app, `main`, every minute: time, weather icon and temperature fixed on top; Q (7:45-9:00), F
+  (8:15-9:00), rain later today and now playing scroll along the bottom (date when idle). Built-in Time is the fallback
+  when HA stops pushing. Knob/buttons control the LG TV while it is on.
   Train times come from `apps/mta` containers (`mta-trains`, `mta-trains-f`: MTA GTFS-RT -> MQTT `transit/...`, no API key).
   After changing apps/mta bump `x-app-version`. Weather icons live in `appdata/homeassistant/clock_icons/`.
   After a reflash (USB installer from Blueforcer/awtrix-ng releases; needs the stock Ulanzi app on the clock) redo:
   Wi-Fi, MQTT 192.168.40.31 + creds + prefix `clock` + HA discovery, `PUT /api/v1/system` `{"tz":"EST5EDT,M3.2.0,M11.1.0",
   "tzName":"America/New_York"}`, `PATCH /api/v1/settings` `{"time24h":false,"timeShowAmPm":true,"timeLeadingZero":false,
   "useCelsius":false}`, upload the icons (`POST /api/v1/files?dir=/ICONS`), and `clock/cmd/apps/order`
-  `{"order":["morning","Time","nowplaying"],"disabled":["Status"]}`. HA entities are `*.clock_*`.
+  `{"order":["main","Time"],"disabled":["Status"]}`. HA entities are `*.clock_*`.

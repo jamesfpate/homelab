@@ -1,8 +1,8 @@
-# Clock (Ulanzi TC002, official AWTRIX NG 1.2+, MQTT prefix "clock"). HA pushes apps every minute: "morning", one
-# non-scrolling two-row screen (top: weather icon, coloured temperature and condition, 7:30-9:00; bottom: next two
-# catchable Q (7:45-9:00) and F (8:15-9:00) trains, fed by the mta-trains containers, skipping trains under the 10 min
-# walk), and what the living room receiver or TV is playing. Time is the clock's built-in app. Order/disable of apps is
-# set once on the clock (PUT /api/v1/apps/order); pushed apps are removed by publishing an empty payload.
+# Clock (Ulanzi TC002, official AWTRIX NG 1.2+, MQTT prefix "clock"). The screen is one layout app, "main", pushed by HA
+# every minute: time, weather icon and coloured temperature fixed on the top row; the next catchable Q (7:45-9:00) and F
+# (8:15-9:00) trains (fed by the mta-trains containers, skipping trains under the 10 min walk), rain later today and what
+# the living room receiver or TV is playing scroll along the bottom row. App order is main, then the built-in Time app as
+# the fallback when HA stops pushing (set once with clock/cmd/apps/order).
 mqtt:
   sensor:
     - name: "Q Beverley Rd to Manhattan"
@@ -35,6 +35,18 @@ template:
             {% endif %}
           {% endfor %}
           {{ ns.t[:120] if ns.t else 'nothing' }}
+
+      # Plex client on the living room TV only (the entity appears after the first play; its name comes from the Plex
+      # client). The LG integration never reports video titles (YouTube etc), only live-TV channel names, so Plex is the
+      # only source.
+      - name: "TV now playing"
+        unique_id: tv_now_playing_living_room
+        icon: mdi:television-play
+        state: >-
+          {% set plex = states.media_player | selectattr('entity_id', 'search', 'plex') | selectattr('entity_id', 'search', 'tv|lg|living') | selectattr('state', 'eq', 'playing') | list %}
+          {% if plex | count > 0 and plex[0].attributes.media_title %}
+            {% set p = plex[0].attributes %}{{ ('TV: ' ~ (p.media_series_title ~ ' - ' if p.media_series_title else '') ~ p.media_title)[:250] }}
+          {% else %}nothing{% endif %}
 
 automation:
   - alias: "Clock: knob and buttons control the TV while it is on"
@@ -96,7 +108,8 @@ automation:
 
   - alias: "Clock: push apps"
     id: clock_push_apps
-    mode: single
+    mode: queued # train sensors update every 30 s, often while the previous push is still running
+    max: 3
     triggers:
       - trigger: time_pattern
         minutes: "/1"
@@ -106,6 +119,10 @@ automation:
         entity_id: sensor.q_beverley_rd_to_manhattan
       - trigger: state
         entity_id: sensor.f_church_av_to_manhattan
+      - trigger: state
+        entity_id: sensor.tv_now_playing
+        not_from: [unknown, unavailable] # no replay of the current title on every HA restart
+        id: tv
     actions:
       - action: weather.get_forecasts
         target:
@@ -127,24 +144,12 @@ automation:
                or (today.precipitation | default(0) | float(0)) > 0.05 }}
           temp_color: >-
             {% if temp > 80 %}#FF3B30{% elif temp > 75 %}#FFD60A{% elif temp > 65 %}#34C759{% elif temp < 60 %}#4DA3FF{% else %}#FFFFFF{% endif %}
-          words_color: >-
-            {% set c = states('weather.forecast_home') %}
-            {% set m = {'sunny': '#FFD60A', 'clear-night': '#4DA3FF', 'partlycloudy': '#B0C4DE', 'cloudy': '#9E9E9E', 'fog': '#9E9E9E',
-                        'rainy': '#1E90FF', 'pouring': '#0057D9', 'lightning': '#C77DFF', 'lightning-rainy': '#C77DFF',
-                        'snowy': '#FFFFFF', 'snowy-rainy': '#D8EEFF', 'hail': '#D8EEFF', 'windy': '#7FDBFF', 'windy-variant': '#7FDBFF'} %}
-            {{ m.get(c, '#FFFFFF') }}
           wx_icon: >-
             {% set c = states('weather.forecast_home') %}
             {% set m = {'sunny': 'wx_sun', 'clear-night': 'wx_clearnight', 'partlycloudy': 'wx_partly', 'cloudy': 'wx_cloud', 'fog': 'wx_fog',
                         'rainy': 'wx_rain', 'pouring': 'wx_pouring', 'lightning': 'wx_storm', 'lightning-rainy': 'wx_storm',
                         'snowy': 'wx_snow', 'snowy-rainy': 'wx_snow', 'hail': 'wx_snow', 'windy': 'wx_cloud', 'windy-variant': 'wx_cloud'} %}
             {{ m.get(c, 'wx_cloud') }}
-          weather_text:
-            - text: "{{ temp }}° "
-              color: "{{ temp_color }}"
-            # rain later today replaces the condition (the icon still shows the current one)
-            - text: "{{ 'Rain' if rain_today and words not in ['Rain', 'Pouring', 'Storms'] else words }}"
-              color: "{{ '#1E90FF' if rain_today and words not in ['Rain', 'Pouring', 'Storms'] else words_color }}"
           q_next: >-
             {% set t = (state_attr('sensor.q_beverley_rd_to_manhattan', 'times') or []) | map('as_timestamp', none) | select('number') | list %}
             {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
@@ -154,44 +159,47 @@ automation:
             {% set ns = namespace(m=[]) %}{% for ts in t %}{% set mins = ((ts - now().timestamp()) / 60) | round(0) | int %}{% if mins > 10 %}{% set ns.m = ns.m + [mins] %}{% endif %}{% endfor %}
             {{ 'N/A' if ns.m | count == 0 else (ns.m[:2] | map('string') | join(' ')) }}
           playing: "{{ states('sensor.now_playing') }}"
-          # show windows (local time, every day): weather 7:30-9:00, Q 7:45-9:00, F 8:15-9:00
+          # train windows (local time, every day): Q 7:45-9:00, F 8:15-9:00
           hm: "{{ now().hour * 60 + now().minute }}"
-          show_wx: "{{ 7*60+30 <= hm < 9*60 }}"
           show_q: "{{ 7*60+45 <= hm < 9*60 }}"
           show_f: "{{ 8*60+15 <= hm < 9*60 }}"
-          tv_playing: >-
-            {# Plex client on the living room TV only (entity appears after the first play; name comes from the Plex client) #}
-            {% set plex = states.media_player | selectattr('entity_id', 'search', 'plex') | selectattr('entity_id', 'search', 'tv|lg|living') | selectattr('state', 'eq', 'playing') | list %}
-            {# the LG integration itself never reports video titles (YouTube etc), only live-TV channel names, so Plex is the only source #}
-            {% if plex | count > 0 and plex[0].attributes.media_title %}
-              {% set p = plex[0].attributes %}{{ 'TV: ' ~ (p.media_series_title ~ ' - ' if p.media_series_title else '') ~ p.media_title }}
-            {% endif %}
       - variables:
-          # one layout app, regions only for what is in its window; the weather sits mid-height while no trains show
-          morning: >-
-            {% set trains = show_q or show_f %}{% set y = 0 if trains else 4 %}
-            {% set ns = namespace(r=[]) %}
-            {% if show_wx %}
-              {% set ns.r = ns.r + [{"id": "wxicon", "box": [0, y, 8, 8], "icon": wx_icon},
-                                    {"id": "wx", "box": [9, y, 43, 8], "font": "small", "align": "start", "text": weather_text}] %}
-            {% endif %}
-            {% if show_q %}{% set ns.r = ns.r + [{"id": "q", "box": [1, 8, 25, 8], "font": "small", "align": "start", "text": "Q " ~ q_next, "color": "#FCCC0A"}] %}{% endif %}
-            {% if show_f %}{% set ns.r = ns.r + [{"id": "f", "box": [27, 8, 25, 8], "font": "small", "align": "start", "text": "F " ~ f_next, "color": "#FF6319"}] %}{% endif %}
-            {{ {"layout": {"version": 1, "regions": ns.r}, "durationMs": 10000, "lifetimeMs": 300000} if ns.r else "" }}
+          # The whole screen is one layout app: time, weather icon and temperature fixed on the top row; trains (in their
+          # windows), rain later today and music on the receiver scroll along the bottom row, or today's date when there is
+          # nothing. A new TV title is shown once, as a notification with the same top row, instead of staying on.
+          # HA owns the time, so the app is pushed every minute with a 3 min lifetime: if HA stops, it expires and the
+          # clock falls back to its built-in Time app.
+          show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else '' }}"
+          tv_title: "{{ states('sensor.tv_now_playing') }}"
+          top:
+            - {"id": "time", "box": [0, 0, 22, 8], "font": "small", "align": "start", "text": "{{ now().strftime('%-I:%M') }}"}
+            - {"id": "wxicon", "box": [24, 0, 8, 8], "icon": "{{ wx_icon }}"}
+            - {"id": "temp", "box": [33, 0, 19, 8], "font": "small", "align": "end", "text": [{"text": "{{ temp }}°", "color": "{{ temp_color }}"}]}
+          rain_later: "{{ rain_today and words not in ['Rain', 'Pouring', 'Storms'] }}"
+          main: >-
+            {% set ns = namespace(b=[]) %}
+            {% if show_q %}{% set ns.b = ns.b + [{"text": "Q " ~ q_next, "color": "#FCCC0A"}] %}{% endif %}
+            {% if show_f %}{% set ns.b = ns.b + [{"text": "F " ~ f_next, "color": "#FF6319"}] %}{% endif %}
+            {% if rain_later %}{% set ns.b = ns.b + [{"text": "Rain today", "color": "#1E90FF"}] %}{% endif %}
+            {% if show | trim %}{% set ns.b = ns.b + [{"text": show | trim, "color": "#FFFFFF"}] %}{% endif %}
+            {% set ns.out = [] %}
+            {% for item in ns.b %}{% set ns.out = ns.out + [{"text": ("   " if not loop.first else "") ~ item.text, "color": item.color}] %}{% endfor %}
+            {% set bottom = ns.out if ns.out else [{"text": now().strftime('%a %b ') ~ now().day, "color": "#9E9E9E"}] %}
+            {{ {"layout": {"version": 1, "regions": top + [
+                 {"id": "bottom", "box": [0, 8, 52, 8], "font": "small", "align": "start",
+                  "scroll": {"mode": "loop", "gap": 16, "speed": 60}, "text": bottom}]},
+                "durationMs": 3600000, "lifetimeMs": 180000} }}
       - action: mqtt.publish
         data:
-          topic: clock/cmd/apps/pushed/morning
-          payload: '{{ (morning | to_json) if morning else "" }}'
-      - variables:
-          show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else (tv_playing | trim) }}"
-      - if: "{{ show | trim != '' }}"
+          topic: clock/cmd/apps/pushed/main
+          payload: "{{ main | to_json }}"
+      - if: "{{ trigger.id == 'tv' and tv_title not in ['nothing', 'unknown', 'unavailable', ''] }}"
         then:
           - action: mqtt.publish
             data:
-              topic: clock/cmd/apps/pushed/nowplaying
-              payload: '{{ {"text": show | trim, "repeat": 1, "durationMs": 10000, "lifetimeMs": 180000} | to_json }}'
-        else:
-          - action: mqtt.publish
-            data:
-              topic: clock/cmd/apps/pushed/nowplaying
-              payload: ""
+              topic: clock/cmd/notify
+              payload: >-
+                {{ {"name": "tvtitle", "layout": {"version": 1, "regions": top + [
+                     {"id": "bottom", "box": [0, 8, 52, 8], "font": "small", "align": "start", "repeat": 1,
+                      "scroll": {"mode": "wrap", "entry": "offscreen", "speed": 60},
+                      "text": [{"text": tv_title, "color": "#E5A00D"}]}]}} | to_json }}
