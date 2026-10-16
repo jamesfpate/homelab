@@ -49,14 +49,18 @@ template:
           {% else %}nothing{% endif %}
 
 automation:
-  # Plus/minus always drive the receiver; the knob and select drive the TV while it is on.
-  - alias: "Clock: buttons control the receiver, knob controls the TV"
+  # Knob turns the receiver volume, knob press toggles the receiver, plus/minus set the screen brightness.
+  - alias: "Clock: knob controls the receiver, buttons set brightness"
     id: clock_tv_controls
     mode: queued
     triggers:
       - trigger: state
         entity_id: event.clock_knob
         id: knob
+      - trigger: state
+        entity_id: binary_sensor.clock_knob
+        to: "on"
+        id: press
       - trigger: state
         entity_id: binary_sensor.clock_button_right
         to: "on"
@@ -65,43 +69,34 @@ automation:
         entity_id: binary_sensor.clock_button_left
         to: "on"
         id: minus
-      - trigger: state
-        entity_id: binary_sensor.clock_button_select
-        to: "on"
-        id: select
     actions:
       - variables:
           turn: "{{ state_attr('event.clock_knob', 'event_type') }}"
-          tv_on: "{{ is_state('media_player.living_room_tv', 'on') }}"
           receiver_on: "{{ states('media_player.tx_nr7100') not in ['off', 'unavailable', 'unknown'] }}"
+          bri: "{{ state_attr('light.clock_matrix', 'brightness') | int(128) }}"
       - choose:
-          - conditions: "{{ trigger.id == 'plus' and receiver_on }}"
+          - conditions: "{{ trigger.id == 'knob' and turn == 'clockwise' and receiver_on }}"
             sequence:
               - action: media_player.volume_up
                 target:
                   entity_id: media_player.tx_nr7100
-          - conditions: "{{ trigger.id == 'minus' and receiver_on }}"
+          - conditions: "{{ trigger.id == 'knob' and turn == 'counterclockwise' and receiver_on }}"
             sequence:
               - action: media_player.volume_down
                 target:
                   entity_id: media_player.tx_nr7100
-          - conditions: "{{ trigger.id == 'knob' and turn == 'clockwise' and tv_on }}"
+          - conditions: "{{ trigger.id == 'press' }}"
             sequence:
-              - action: media_player.volume_up
+              - action: "media_player.turn_{{ 'off' if receiver_on else 'on' }}"
                 target:
-                  entity_id: media_player.living_room_tv
-          - conditions: "{{ trigger.id == 'knob' and turn == 'counterclockwise' and tv_on }}"
+                  entity_id: media_player.tx_nr7100
+          - conditions: "{{ trigger.id in ['plus', 'minus'] }}"
             sequence:
-              - action: media_player.volume_down
+              - action: light.turn_on # never steps to 0, which would turn the screen off
                 target:
-                  entity_id: media_player.living_room_tv
-          - conditions: "{{ trigger.id == 'select' and tv_on }}"
-            sequence:
-              - action: media_player.volume_mute
-                target:
-                  entity_id: media_player.living_room_tv
+                  entity_id: light.clock_matrix
                 data:
-                  is_volume_muted: "{{ not state_attr('media_player.living_room_tv', 'is_volume_muted') }}"
+                  brightness: "{{ [[bri + (25 if trigger.id == 'plus' else -25), 5] | max, 255] | min }}"
 
   # The buttons and knob never switch apps ("main" is the only screen); HA handles them instead.
   - alias: "Clock: block button navigation"
