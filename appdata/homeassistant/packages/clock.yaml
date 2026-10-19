@@ -1,5 +1,5 @@
 # Clock (Ulanzi TC002, official AWTRIX NG 1.2+, MQTT prefix "clock"). The screen is one layout app, "main", pushed by HA
-# every minute: time, weather icon and coloured temperature fixed on the top row; the next catchable Q (7:45-9:00) and F
+# every minute: time, weather icon, coloured temperature and today's high (3 am-4 pm) or tonight's low fixed on the top row; the next catchable Q (7:45-9:00) and F
 # (8:15-9:00) trains (fed by the mta-trains containers, skipping trains under the 10 min walk), rain later today and what
 # the living room receiver or TV is playing scroll along the bottom row. App order is main, then the built-in Time app as
 # the fallback when HA stops pushing (set once with clock/cmd/apps/order).
@@ -49,8 +49,8 @@ template:
           {% else %}nothing{% endif %}
 
 automation:
-  # Knob turns the receiver volume, knob press toggles the receiver, plus/minus set the screen brightness.
-  - alias: "Clock: knob controls the receiver, buttons set brightness"
+  # Knob turns the receiver volume, knob press toggles the living room TV, plus/minus set the screen brightness.
+  - alias: "Clock: knob controls receiver volume and TV power, buttons set brightness"
     id: clock_tv_controls
     mode: queued
     triggers:
@@ -85,11 +85,17 @@ automation:
               - action: media_player.volume_down
                 target:
                   entity_id: media_player.tx_nr7100
+          - conditions: "{{ trigger.id == 'press' and is_state('media_player.living_room_tv', 'on') }}"
+            sequence:
+              - action: media_player.turn_off
+                target:
+                  entity_id: media_player.living_room_tv
           - conditions: "{{ trigger.id == 'press' }}"
             sequence:
-              - action: "media_player.turn_{{ 'off' if receiver_on else 'on' }}"
-                target:
-                  entity_id: media_player.tx_nr7100
+              - action: wake_on_lan.send_magic_packet # webOS TVs only power on from a magic packet
+                data:
+                  mac: "AC:5A:F0:4D:8C:21"
+                  broadcast_address: 192.168.1.255
           - conditions: "{{ trigger.id in ['plus', 'minus'] }}"
             sequence:
               - action: light.turn_on # never steps to 0, which would turn the screen off
@@ -137,6 +143,12 @@ automation:
         data:
           type: daily
         response_variable: fc
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: hourly
+        response_variable: fch
       - variables:
           today: "{{ ((fc['weather.forecast_home'] | default({}, true)).forecast | default([], true))[0] | default({}, true) }}"
           temp: "{{ state_attr('weather.forecast_home', 'temperature') | round(0) | int }}"
@@ -151,6 +163,14 @@ automation:
                or (today.precipitation | default(0) | float(0)) > 0.05 }}
           temp_color: >-
             {% if temp > 80 %}#FF3B30{% elif temp > 75 %}#FFD60A{% elif temp > 65 %}#34C759{% elif temp < 60 %}#4DA3FF{% else %}#FFFFFF{% endif %}
+          # today's high from 3 am to 4 pm, then the low over the next 12 hours
+          show_high: "{{ 3 <= now().hour < 16 }}"
+          hilo: >-
+            {% set hours = ((fch['weather.forecast_home'] | default({}, true)).forecast | default([], true))[:12] | map(attribute='temperature') | select('number') | list %}
+            {% if show_high %}{{ today.temperature | default(temp) | round(0) | int }}
+            {% else %}{{ (hours | min if hours else today.templow | default(temp)) | round(0) | int }}{% endif %}
+          hilo_color: >-
+            {% if hilo > 80 %}#FF3B30{% elif hilo > 75 %}#FFD60A{% elif hilo > 65 %}#34C759{% elif hilo < 60 %}#4DA3FF{% else %}#FFFFFF{% endif %}
           wx_icon: >-
             {% set c = states('weather.forecast_home') %}
             {% set m = {'sunny': 'wx_sun', 'clear-night': 'wx_clearnight', 'partlycloudy': 'wx_partly', 'cloudy': 'wx_cloud', 'fog': 'wx_fog',
@@ -179,9 +199,11 @@ automation:
           show: "{{ playing if playing not in ['nothing', 'unknown', 'unavailable'] else '' }}"
           tv_title: "{{ states('sensor.tv_now_playing') }}"
           top:
-            - {"id": "time", "box": [0, 0, 22, 8], "font": "small", "align": "start", "text": "{{ now().strftime('%-I:%M') }}"}
-            - {"id": "wxicon", "box": [24, 0, 8, 8], "icon": "{{ wx_icon }}"}
-            - {"id": "temp", "box": [33, 0, 19, 8], "font": "small", "align": "end", "text": [{"text": "{{ temp }}°", "color": "{{ temp_color }}"}]}
+            - {"id": "time", "box": [0, 0, 17, 8], "font": "small", "align": "start", "text": "{{ now().strftime('%-I:%M') }}"}
+            - {"id": "wxicon", "box": [18, 0, 8, 8], "icon": "{{ wx_icon }}"}
+            - {"id": "temp", "box": [27, 0, 11, 8], "font": "small", "align": "end", "text": [{"text": "{{ temp }}°", "color": "{{ temp_color }}"}]}
+            - {"id": "hiloarrow", "box": [39, 2, 5, 3], "icon": "{{ 'arr_up' if show_high else 'arr_down' }}"}
+            - {"id": "hilo", "box": [44, 0, 8, 8], "font": "small", "align": "end", "text": "{{ [{'text': hilo | string, 'color': hilo_color}] }}"} # a bare number would go out as a JSON number
           rain_later: "{{ rain_today and words not in ['Rain', 'Pouring', 'Storms'] }}"
           main: >-
             {% set ns = namespace(b=[]) %}
