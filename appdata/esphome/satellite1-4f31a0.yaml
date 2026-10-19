@@ -1,4 +1,4 @@
-# Satellite1 (FutureProofHomes, 192.168.1.109) built from their dashboard template, plus the "hey clanker" wake word
+# Satellite1 (FutureProofHomes, 192.168.1.109) built from their dashboard template, plus the "hey clanker" and "hey iris" wake words
 # trained with the wakeword-trainer (stacks/ai.yaml). Built and flashed by scripts/flash-satellite1.sh.
 # Pinned to a FutureProofHomes release: to update, bump ref below to the new tag (HA notifies when one is out,
 # packages/satellite1_firmware.yaml) and reflash. Don't use FutureProofHomes' own OTA: it would drop hey clanker.
@@ -30,10 +30,14 @@ packages:
 logger:
   level: ${log_level}
 
-# Added next to hey_jarvis and okay_nabu; picked in HA's wake word select. Uses the cutoff from its own calibration
-# (0.95: 98% recall, 0 false accepts over 9.7 h); the sensitivity select only adjusts the two stock models.
+# Added next to hey_jarvis and okay_nabu; picked in HA's wake word select. The sensitivity select only adjusts the two
+# stock models, so the cutoff is set in each model's json. hey_clanker uses its own calibration (0.95: 98% recall, 0 false
+# accepts over 9.7 h). hey_iris is set by hand to 0.99 (97% recall, 0.38 false accepts/h): the trainer picked 1.00 to
+# stay under 0.25/h, which caught only 25% of wakes.
 micro_wake_word:
   id: mww
   models:
     - id: hey_clanker
       model: wakewords/hey_clanker.json
+    - id: hey_iris
+      model: wakewords/hey_iris.json
