@@ -5,7 +5,7 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
 - `compose/infra.yaml` - Komodo v2 (core + periphery, FerretDB/Postgres backend). The only stack run by Unraid's Compose Manager.
 - `stacks/` - service stacks, declared in `komodo/resources.toml` and deployed by Komodo's Resource Sync:
   - `proxy.yaml` - Traefik reverse proxy
-  - `core.yaml` - core infrastructure (Postgres, pgAdmin, dyndns, Cloudflare Tunnel)
+  - `core.yaml` - core infrastructure (Postgres, pgAdmin, dyndns, Cloudflare Tunnel, Pocket ID login)
   - `home.yaml` - Home Assistant
   - `media.yaml` - Plex, *arr stack (incl. Lidarr), Seerr, sabnzbd, Pinchflat; gluetun + slskd (dormant, see Music)
   - `music.yaml` - Music Assistant on the IoT VLAN (Spotify -> Onkyo, KEF LSX II, Satellite1 speakers); Navidrome; musicflow (dormant, see Music)
@@ -13,6 +13,7 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `chat.yaml` - Open WebUI (uses Ollama + Chatterbox/Kokoro)
   - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
   - `typing.yaml` - kids typing game (`apps/typing`, static page, internal only)
+  - `photos.yaml` - Immich photo library (originals on the `family` ZFS mirror, ML on the GPU)
   - `fusion.yaml` - Part Bench, parametric CAD in the browser (private ghcr.io image pinned to a commit, internal only)
 - `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`). "Deploy on push" only
   redeploys a stack whose compose file changed, so an app-only change also needs a bump of the stack's `x-app-version`.
@@ -97,6 +98,8 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.11 - pgadmin - db.domain.com  
 192.168.1.13 - postgres  
 192.168.1.14 / 192.168.40.46 / 192.168.60.14 - Navidrome - listen.domain.com  
+192.168.1.20 - Immich - photos.domain.com  
+192.168.1.21 - Pocket ID (passkey OIDC login) - id.domain.com  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.26 - typing (kids typing game, internal only) - type.domain.com  
 192.168.1.27 - musicflow dashboard (inbox by source, keep rates) - inbox.domain.com  

@@ -7,7 +7,7 @@ networks:
 
 # gatus is built from apps/gatus. Komodo's "Deploy on push" only redeploys a stack whose compose file changed, so after
 # changing apps/gatus bump x-app-version in the same commit.
-x-app-version: 2
+x-app-version: 3
 
 services:
   pgadmin:
@@ -90,6 +90,31 @@ services:
     labels:
       - "traefik.enable=false"  # Database doesn't need HTTP access
     restart: unless-stopped
+
+  # Pocket ID: passkey-only OIDC login (id.<domain>). First run: open https://id.<domain>/setup and register a passkey
+  # (that account is the admin). Clients so far: Immich (stacks/photos.yaml).
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v2 # tracks v2.x
+    container_name: pocket-id
+    restart: unless-stopped
+    networks:
+      vlan-private:
+        ipv4_address: 192.168.1.21
+    environment:
+      - TZ=${TZ}
+      - APP_URL=https://id.${DOMAIN}
+      - TRUST_PROXY=true
+      - ENCRYPTION_KEY=${POCKET_ID_ENCRYPTION_KEY}
+      - PUID=${PUID}
+      - PGID=${PGID}
+    volumes:
+      - /mnt/user/appdata/pocket-id:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pocket-id.rule=Host(`id.${DOMAIN}`)"
+      - "traefik.http.routers.pocket-id.entrypoints=websecure"
+      - "traefik.http.routers.pocket-id.middlewares=ipallowlist"
+      - "traefik.http.services.pocket-id.loadbalancer.server.port=1411"
 
   cloudflared:
     image: cloudflare/cloudflared:latest

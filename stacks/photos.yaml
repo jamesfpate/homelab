@@ -1,0 +1,85 @@
+networks:
+  vlan-private:
+    external: true
+    name: br0
+  immich: # private bridge: server <-> ML, Redis, Postgres
+    name: immich
+
+# Immich photo library (photos.<domain>, LAN/VPN only). Follows the upstream docker-compose.yml of the release
+# (https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml); check it on a major bump.
+# - Originals: /mnt/family/immich (ZFS dataset family/immich on the mirrored family pool).
+# - Postgres must be Immich's image (VectorChord); it is on the NVMe pool path directly, not through /mnt/user (FUSE).
+# - ML on the GPU; models unload after MACHINE_LEARNING_MODEL_TTL idle, so VRAM is only used while jobs run.
+#   For the first big import, free VRAM first: `docker exec ollama ollama stop <model>`.
+# - Login: local admin first (first account created is admin), then OAuth via Pocket ID (id.<domain>, stacks/core.yaml).
+# Away from home: UDM WireGuard (192.168.3.0/24 is in the ipallowlist). The Android app's server URL is https://photos.<domain>.
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v3 # tracks v3.x; a major bump is deliberate (read the release notes)
+    container_name: immich_server
+    restart: unless-stopped
+    networks:
+      immich:
+      vlan-private:
+        ipv4_address: 192.168.1.20
+    environment:
+      - TZ=${TZ}
+      - DB_HOSTNAME=immich_postgres
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${IMMICH_DB_PASSWORD}
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=immich_redis
+      - IMMICH_MACHINE_LEARNING_URL=http://immich_machine_learning:3003
+    volumes:
+      - /mnt/family/immich:/data
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - redis
+      - database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=br0" # two networks: without this Traefik may pick the immich bridge, which it can't reach
+      - "traefik.http.routers.photos.rule=Host(`photos.${DOMAIN}`)"
+      - "traefik.http.routers.photos.entrypoints=websecure"
+      - "traefik.http.routers.photos.middlewares=ipallowlist"
+      - "traefik.http.services.photos.loadbalancer.server.port=2283"
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v3-cuda
+    container_name: immich_machine_learning
+    restart: unless-stopped
+    runtime: nvidia
+    networks:
+      - immich
+    environment:
+      - TZ=${TZ}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - MACHINE_LEARNING_MODEL_REVISION=v2
+      - MACHINE_LEARNING_MODEL_TTL=300 # seconds idle before a model leaves VRAM
+    volumes:
+      - /mnt/user/appdata/immich/model-cache:/cache
+
+  redis:
+    image: docker.io/valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    container_name: immich_redis
+    restart: unless-stopped
+    networks:
+      - immich
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+
+  database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    container_name: immich_postgres
+    restart: unless-stopped
+    networks:
+      - immich
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${IMMICH_DB_PASSWORD}
+      - POSTGRES_DB=immich
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - /mnt/apps/appdata/immich/postgres:/var/lib/postgresql/data
+    shm_size: 128mb

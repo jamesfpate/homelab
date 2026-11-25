@@ -80,6 +80,8 @@ endpoints:
   - { name: ash, url: "https://ash.${DOMAIN}", <<: *web }
   - { name: typing, url: "https://type.${DOMAIN}", <<: *web }
   - { name: fusion, url: "https://fusion.${DOMAIN}", <<: *web }
+  - { name: immich, url: "https://photos.${DOMAIN}", <<: *web }
+  - { name: pocket id, url: "https://id.${DOMAIN}", <<: *web }
   # wakeword-trainer is left out: it is stopped when idle. Unraid itself (192.168.1.42) is left out: macvlan containers
   # cannot reach their own host.
 
