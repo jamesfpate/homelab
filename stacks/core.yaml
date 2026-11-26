@@ -108,7 +108,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
     volumes:
-      - /mnt/user/appdata/pocket-id:/app/data
+      - /mnt/apps/appdata/pocket-id:/app/data # pool path, not /mnt/user (FUSE): SQLite needs real file locking
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pocket-id.rule=Host(`id.${DOMAIN}`)"
