@@ -100,7 +100,8 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.14 / 192.168.40.46 / 192.168.60.14 - Navidrome - listen.domain.com  
 192.168.1.20 - Immich - photos.domain.com  
 192.168.1.21 - Pocket ID (passkey OIDC login) - id.domain.com  
-192.168.1.22 - Tailscale subnet router (remote access to 192.168.1.0/24; phones)  
+192.168.1.22 - Tailscale subnet router (remote access to 192.168.1.0/24; phones). The host itself
+(192.168.1.42/32) is routed by the Unraid Tailscale plugin (node `unraid`), since macvlan containers can't reach it.  
 192.168.1.25 - ash (personal site, internal only) - ash.domain.com  
 192.168.1.26 - typing (kids typing game, internal only) - type.domain.com  
 192.168.1.27 - musicflow dashboard (inbox by source, keep rates) - inbox.domain.com  

@@ -119,6 +119,8 @@ services:
   # Tailscale subnet router: remote access to the main LAN (192.168.1.0/24) from phones, no inbound ports.
   # Its own LAN IP because Unraid itself can't reach macvlan containers (so the Unraid Tailscale plugin can't
   # reach Traefik). Traffic is SNATed to 192.168.1.22, which the Traefik ipallowlist already allows.
+  # The reverse also holds (this container can't reach its host), so the Unraid Tailscale plugin (node `unraid`)
+  # advertises just 192.168.1.42/32; the more specific route wins, so the host's shares and UI go via the plugin.
   # First start: `docker logs tailscale` prints a login URL. Then in the admin console approve the subnet route
   # and disable key expiry for this machine.
   tailscale:
