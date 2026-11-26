@@ -95,3 +95,4 @@ endpoints:
   - { name: udm, url: "icmp://192.168.1.1", <<: *ping }
   - { name: satellite1, url: "icmp://192.168.1.109", <<: *ping }
   - { name: clock, url: "icmp://192.168.40.60", <<: *ping }
+  - { name: tailscale, group: infra, url: "icmp://192.168.1.22", <<: *ping }
