@@ -14,6 +14,7 @@ Infrastructure-as-code for Docker services on Unraid: Docker Compose stacks depl
   - `ash.yaml` - personal SvelteKit site (private ghcr.io image, internal only)
   - `typing.yaml` - kids typing game (`apps/typing`, static page, internal only)
   - `photos.yaml` - Immich photo library (originals on the `family` ZFS mirror, ML on the GPU)
+  - `winnow-site.yaml` - Winnow's website, public via the Cloudflare tunnel (ghcr.io image built by jamesfpate/winnow)
   - `fusion.yaml` - Part Bench, parametric CAD in the browser (private ghcr.io image pinned to a commit, internal only)
 - `apps/` - small first-party services built by Komodo from this repo (`musicflow`, `typing`). "Deploy on push" only
   redeploys a stack whose compose file changed, so an app-only change also needs a bump of the stack's `x-app-version`.
@@ -119,7 +120,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.1.53 - Kokoro text-to-speech (Wyoming :10300, CPU)  
 192.168.1.54 - chat.domain.com  
 192.168.1.42:9120 - Komodo - komodo.domain.com  
-192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Seerr)  
+192.168.60.3 - Cloudflare Tunnel (public: request.domain.com -> Seerr, winnow.domain.com -> Winnow site)  
 192.168.60.61 - Prowlarr - indexer.domain.com  
 192.168.60.62 - Sonarr - tv.domain.com  
 192.168.60.63 - Radarr - movies.domain.com  
@@ -130,6 +131,7 @@ Validate a stack: `docker compose -f stacks/<stack>.yaml config`
 192.168.60.68 - Lidarr - albums.domain.com  
 192.168.60.69 - gluetun + slskd (phase 2) - soulseek.domain.com  
 192.168.60.71 - musicflow (phase 2, no UI)  
+192.168.60.72 - Winnow website (public via tunnel) - winnow.domain.com  
 
 ## Music
 Self-hosted replacement for Spotify discovery, with offline listening on Android. Status: **phase 1** (library + playback).

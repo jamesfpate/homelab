@@ -77,6 +77,20 @@ registry_account = "jamesfpate"
 auto_update = true
 
 [[stack]]
+name = "winnow-site"
+tags = ["homelab"]
+[stack.config]
+server = "Unraid"
+project_name = "winnow-site"
+repo = "jamesfpate/homelab"
+branch = "main"
+file_paths = ["stacks/winnow-site.yaml"]
+additional_env_files = [{ path = "/mnt/user/appdata/env/.env", track = false }]
+registry_provider = "ghcr.io" # ghcr.io/jamesfpate/winnow-site, built by jamesfpate/winnow's Site workflow
+registry_account = "jamesfpate"
+auto_update = true
+
+[[stack]]
 name = "fusion"
 tags = ["homelab"]
 [stack.config]

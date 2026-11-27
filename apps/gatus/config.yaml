@@ -63,6 +63,8 @@ endpoints:
   - { name: home assistant, url: "https://ha.${DOMAIN}", <<: *web }
   - { name: plex, url: "https://plex.${DOMAIN}", <<: *web }
   - { name: seerr, url: "https://request.${DOMAIN}", <<: *web }
+  # Public, through the Cloudflare tunnel (not Traefik): checks the tunnel route end to end.
+  - { name: winnow site, url: "https://winnow.${DOMAIN}", <<: *web }
   - { name: sonarr, url: "https://tv.${DOMAIN}", <<: *web }
   - { name: radarr, url: "https://movies.${DOMAIN}", <<: *web }
   - { name: music assistant, url: "https://music.${DOMAIN}", <<: *web }

@@ -7,7 +7,7 @@ networks:
 
 # gatus is built from apps/gatus. Komodo's "Deploy on push" only redeploys a stack whose compose file changed, so after
 # changing apps/gatus bump x-app-version in the same commit.
-x-app-version: 4
+x-app-version: 5
 
 services:
   pgadmin:

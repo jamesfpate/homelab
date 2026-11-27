@@ -1,0 +1,22 @@
+networks:
+  vlan-downloads:
+    external: true
+
+services:
+  # Winnow's website (winnow.jamespate.net), public through the Cloudflare tunnel like Seerr: the tunnel's public
+  # hostname points straight at http://192.168.60.72, not Traefik. Static nginx; source is site/ in jamesfpate/winnow,
+  # whose CI pushes ghcr.io/jamesfpate/winnow-site:latest (picked up at the 03:00 auto-update).
+  winnow-site:
+    image: ghcr.io/jamesfpate/winnow-site:latest
+    container_name: winnow-site
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    networks:
+      vlan-downloads:
+        ipv4_address: 192.168.60.72
+    labels:
+      - "traefik.enable=false"
